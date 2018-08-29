@@ -1,4 +1,4 @@
-package cn.ac.iie.dolls
+package cn.ac.iie.dolls.db
 
 import com.alibaba.druid.pool.DruidDataSourceFactory
 import java.sql.Connection
@@ -11,7 +11,6 @@ import javax.sql.DataSource
  * 采用阿里druid的连接池
  */
 class JDBCPool(private val config: Map<String, String>) {
-
 
     private val conf: MutableMap<String, String> by lazy {
         hashMapOf(

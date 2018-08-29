@@ -1,6 +1,6 @@
 package demo;
 
-import cn.ac.iie.dolls.JDBCPool;
+import cn.ac.iie.dolls.db.JDBCPool;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class Main {
+public class JDBTest {
 
     public static void main(String[] args) throws SQLException {
 
@@ -16,18 +16,6 @@ public class Main {
         config.put("url", "jdbc:mysql://localhost:3306/mydb?useSSL=false");
         config.put("username", "iie");
         config.put("password", "iie");
-        config.put("filters", "stat");
-        config.put("initialSize", "5");
-        config.put("maxActive", "300");
-        config.put("maxWait", "60000");
-        config.put("timeBetweenEvictionRunsMillis", "60000");
-        config.put("minEvictableIdleTimeMillis", "300000");
-        config.put("validationQuery", "SELECT 1");
-        config.put("testWhileIdle", "true");
-        config.put("testOnBorrow", "false");
-        config.put("testOnReturn", "false");
-        config.put("poolPreparedStatements", "true");
-        config.put("maxPoolPreparedStatementPerConnectionSize", "200");
 
         JDBCPool mysql = new JDBCPool(config).init();
 

@@ -16,6 +16,8 @@ class RedisSessionDataStore(private var rpp: RPoolProxy) : AbstractSessionDataSt
 
     private val log = Log.getLogger(RedisSessionDataStore::class.java)
 
+    private val key = "RedisSession"
+
     internal class ObjectInputStreamWithLoader @Throws(IOException::class, StreamCorruptedException::class)
     constructor(`in`: InputStream, private val loader: ClassLoader?) : ObjectInputStream(`in`) {
 
@@ -52,7 +54,7 @@ class RedisSessionDataStore(private var rpp: RPoolProxy) : AbstractSessionDataSt
         val load = Runnable {
             try {
                 log.debug("Loading session {} from Redis", id)
-                val session = rpp.jedis { r -> r.get(getCacheKey(id)) }
+                val session = rpp.jedis { r -> r.hget(key, getCacheKey(id)) }
                 session?.byteInputStream()?.use { byteArrayInputStream ->
                     ObjectInputStreamWithLoader(byteArrayInputStream, _context.context.classLoader).use { objectInputStream ->
                         val sd = objectInputStream.readObject() as SessionData
@@ -75,7 +77,7 @@ class RedisSessionDataStore(private var rpp: RPoolProxy) : AbstractSessionDataSt
 
     override fun delete(id: String): Boolean {
         log.debug("Deleting session with id {} from Redis", id)
-        return rpp.jedis { r -> r.del(getCacheKey(id)) != null }
+        return rpp.jedis { r -> r.hdel(key, getCacheKey(id)) != null }
     }
 
     override fun doGetExpired(candidates: MutableSet<String>?): MutableSet<String>? {
@@ -128,7 +130,7 @@ class RedisSessionDataStore(private var rpp: RPoolProxy) : AbstractSessionDataSt
         ByteArrayOutputStream().use { byteArrayOutputStream ->
             ObjectOutputStream(byteArrayOutputStream).use { objectOutputStream ->
                 objectOutputStream.writeObject(data)
-                rpp.jedis { r -> r.set(getCacheKey(id), byteArrayOutputStream.toString()) }
+                rpp.jedis { r -> r.hset(key, getCacheKey(id), byteArrayOutputStream.toString()) }
                 log.debug("Session {} saved to Redis, expires {} ", id, data.expiry)
             }
         }
@@ -140,7 +142,7 @@ class RedisSessionDataStore(private var rpp: RPoolProxy) : AbstractSessionDataSt
 
         val load = Runnable {
             try {
-                val exists = rpp.jedis { r -> r.exists(getCacheKey(id)) }
+                val exists = rpp.jedis { r -> r.hexists(key, getCacheKey(id)) }
                 if (!exists) {
                     reference.set(false)
                 } else {

@@ -9,7 +9,6 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-/**redis连接池选择器**/
 public class RedisPoolSelector {
 	// Note-XXX: in STANDALONE mode, L2 pool is the same as L1 pool
 	public class RedisConnection {

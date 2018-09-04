@@ -7,9 +7,6 @@ import redis.clients.jedis.exceptions.JedisException;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * redis连接池
- **/
 public class RedisPool {
     private static Logger log = Log.getLogger(RedisPool.class);
 

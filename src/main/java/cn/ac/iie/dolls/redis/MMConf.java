@@ -4,9 +4,6 @@ import redis.clients.jedis.HostAndPort;
 
 import java.util.Set;
 
-/**
- * 多媒体配置
- */
 public class MMConf {
     /**
      * STANDALONE, SENTINEL, CLUSTER,

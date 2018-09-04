@@ -13,7 +13,7 @@ public class RPoolProxy {
     public RedisPool rpL1 = null;
     public RedisPoolSelector rps = null;
 
-    public Boolean isInit = false;
+    private Boolean isInit = false;
 
     public RPoolProxy(MMConf conf) {
         if (conf != null)

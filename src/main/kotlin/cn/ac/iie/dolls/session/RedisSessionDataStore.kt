@@ -12,11 +12,13 @@ import java.io.ObjectOutputStream
 import java.io.ByteArrayOutputStream
 
 
-class RedisSessionDataStore(private var rpp: RPoolProxy) : AbstractSessionDataStore() {
+class RedisSessionDataStore : AbstractSessionDataStore() {
 
     private val log = Log.getLogger(RedisSessionDataStore::class.java)
 
     private val key = "RedisSession".toByteArray()
+
+    lateinit var rpp: RPoolProxy
 
     internal class ObjectInputStreamWithLoader @Throws(IOException::class, StreamCorruptedException::class)
     constructor(`in`: InputStream, private val loader: ClassLoader?) : ObjectInputStream(`in`) {
@@ -28,7 +30,7 @@ class RedisSessionDataStore(private var rpp: RPoolProxy) : AbstractSessionDataSt
         }
 
         override fun resolveClass(classDesc: ObjectStreamClass): Class<*> {
-            return Class.forName(classDesc.name, false, this.loader)
+            return Class.forName(classDesc.name, false, loader)
         }
     }
 

@@ -6,11 +6,13 @@ import org.eclipse.jetty.server.session.SessionDataStore
 import org.eclipse.jetty.server.session.SessionHandler
 
 
-class RedisSessionDataStoreFactory(private val rpp: RPoolProxy): AbstractSessionDataStoreFactory() {
+class RedisSessionDataStoreFactory(private var proxy: RPoolProxy): AbstractSessionDataStoreFactory() {
 
     @Throws(Exception::class)
     override fun getSessionDataStore(handler: SessionHandler): SessionDataStore {
-        val store = RedisSessionDataStore(rpp)
+        val store = RedisSessionDataStore().apply {
+            rpp = proxy
+        }
         store.gracePeriodSec = gracePeriodSec
         store.savePeriodSec = savePeriodSec
         return store

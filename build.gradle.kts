@@ -17,6 +17,8 @@ dependencies {
     compile("com.alibaba", "druid", "1.1.8")
 
     compile("org.apache.rocketmq:rocketmq-client:4.3.0")
+    compile("redis.clients:jedis:2.9.0")
+    compile("org.eclipse.jetty:jetty-server:9.4.12.v20180830")
 }
 
 tasks.withType<KotlinCompile> {

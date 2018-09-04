@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "cn.ca.iie.dolls"
-version = "1.1"
+version = "1.2"
 
 repositories {
     jcenter()

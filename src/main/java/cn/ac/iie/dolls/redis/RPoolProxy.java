@@ -32,7 +32,7 @@ public class RPoolProxy {
             throw new Exception("The RPool url can not be null.");
         }
         if (isInit) {
-            return null;
+            return this;
         }
         isInit = true;
 

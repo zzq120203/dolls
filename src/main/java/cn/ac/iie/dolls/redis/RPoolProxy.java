@@ -13,6 +13,8 @@ public class RPoolProxy {
     public RedisPool rpL1 = null;
     public RedisPoolSelector rps = null;
 
+    public Boolean isInit = false;
+
     public RPoolProxy(MMConf conf) {
         if (conf != null)
             this.conf = conf;
@@ -29,6 +31,10 @@ public class RPoolProxy {
         if (urls == null) {
             throw new Exception("The RPool url can not be null.");
         }
+        if (isInit) {
+            return 0;
+        }
+        isInit = true;
 
         conf.setAuthToken(authToken);
 

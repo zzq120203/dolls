@@ -31,7 +31,7 @@ class RedisSessionDataStore(private var rpp: RPoolProxy) : AbstractSessionDataSt
     }
 
     override fun doStart() {
-        initializeStore()
+        rpp.init()
         super.doStart()
     }
 
@@ -132,10 +132,6 @@ class RedisSessionDataStore(private var rpp: RPoolProxy) : AbstractSessionDataSt
                 log.debug("Session {} saved to Redis, expires {} ", id, data.expiry)
             }
         }
-    }
-
-    private fun initializeStore() {
-        rpp.init()
     }
 
     override fun exists(id: String): Boolean {

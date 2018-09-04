@@ -138,17 +138,19 @@ class RedisSessionDataStore(private var rpp: RPoolProxy) : AbstractSessionDataSt
         val reference = AtomicReference<Boolean>()
         val exception = AtomicReference<Exception>()
 
-        val load = {
+        val load = Runnable {
             try {
                 val exists = rpp.jedis { r -> r.exists(getCacheKey(id)) }
                 if (!exists) {
                     reference.set(false)
                 } else {
                     val sd = load(id)
-                    if (sd!!.expiry <= 0)
-                        reference.set(true)
-                    else
-                        reference.set(sd.expiry > System.currentTimeMillis())
+                    sd?.let {
+                        if (sd.expiry <= 0)
+                            reference.set(true)
+                        else
+                            reference.set(sd.expiry > System.currentTimeMillis())
+                    }
                 }
             } catch (e: Exception) {
                 exception.set(e)

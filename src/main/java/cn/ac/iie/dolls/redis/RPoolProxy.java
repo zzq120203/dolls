@@ -23,16 +23,16 @@ public class RPoolProxy {
         }
     }
 
-    public int init() throws Exception {
+    public RPoolProxy init() throws Exception {
         return init(conf.getUrls(), conf.getAuthToken());
     }
 
-    public int init(String urls, String authToken) throws Exception {
+    public RPoolProxy init(String urls, String authToken) throws Exception {
         if (urls == null) {
             throw new Exception("The RPool url can not be null.");
         }
         if (isInit) {
-            return 0;
+            return null;
         }
         isInit = true;
 
@@ -59,7 +59,7 @@ public class RPoolProxy {
                 break;
         }
 
-        return 0;
+        return this;
     }
 
     private int init_by_sentinel(MMConf conf, String urls) throws Exception {

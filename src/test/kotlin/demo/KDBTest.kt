@@ -10,7 +10,7 @@ fun main(args: Array<String>) {
             "password" to "iie"
     )
 
-    val mysql = JDBCPool(config).init()
+    val mysql = JDBCPool(config)
 
     with(mysql) {
         val select = select("select 1") { rs ->

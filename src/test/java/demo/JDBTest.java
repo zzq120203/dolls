@@ -1,6 +1,7 @@
 package demo;
 
 import cn.ac.iie.dolls.db.JDBCPool;
+import cn.ac.iie.dolls.redis.RPoolProxy;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -17,7 +18,7 @@ public class JDBTest {
         config.put("username", "iie");
         config.put("password", "iie");
 
-        JDBCPool mysql = new JDBCPool(config).init();
+        JDBCPool mysql = new JDBCPool(config);
 
         List<String> select = mysql.select("select 1", rs -> {
             List<String> list = new ArrayList<>();
@@ -34,5 +35,9 @@ public class JDBTest {
 
         mysql.insert("sql");
         mysql.delete("sql");
+
+
+        RPoolProxy rpp = new RPoolProxy(null);
+
     }
 }

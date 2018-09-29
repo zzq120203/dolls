@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.reflect.TypeToken;
-import com.sun.istack.internal.NotNull;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -25,26 +24,26 @@ public class LoadConfig {
     }).create();
 
 
-    public static <T> void load(@NotNull File file, @NotNull Class<T> c) throws IOException {
-        var json = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
+    public static <T> void load(File file, Class<T> c) throws IOException {
+        String json = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
         load(json, c);
     }
 
-    public static <T> void load(@NotNull String json, @NotNull Class<T> c) {
+    public static <T> void load(String json, Class<T> c) {
         Map<String, String> map = gson.fromJson(json, new TypeToken<Map<String, String>>() {
         }.getType());
         load(map, c);
     }
 
-    public static <T> void load(@NotNull Map<String, String> map, @NotNull Class<T> c) {
+    public static <T> void load(Map<String, String> map, Class<T> c) {
         Field[] fields = c.getDeclaredFields();
 
         Arrays.stream(fields)
                 .collect(Collectors.toMap(field -> field.getName().toLowerCase(), field -> field))
                 .forEach((name, field) -> {
                     if (!map.containsKey(name)) {
-                        FieldMeta fm = field.getAnnotation(FieldMeta.class);
-                        if (!fm.isOptional())
+                        Optional optional = field.getAnnotation(Optional.class);
+                        if (optional == null)
                             throw new RuntimeException(field.getName().toLowerCase() + " uninitialized");
                     } else {
                         Object value = map.get(name);

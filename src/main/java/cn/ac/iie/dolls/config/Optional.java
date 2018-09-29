@@ -7,7 +7,5 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.FIELD, ElementType.METHOD})
-public @interface FieldMeta {
-	boolean isOptional() default false;
-	String desc() default "";
+public @interface Optional {
 }

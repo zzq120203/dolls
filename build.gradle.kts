@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "cn.ca.iie.dolls"
-version = "1.2"
+version = "2.0"
 
 repositories {
     jcenter()
@@ -19,8 +19,16 @@ dependencies {
     compile("org.apache.rocketmq:rocketmq-client:4.3.0")
     compile("redis.clients:jedis:2.9.0")
     compile("org.eclipse.jetty:jetty-server:9.4.12.v20180830")
+
+    compile("com.google.code.gson:gson:2.8.5")
+    compile("commons-io:commons-io:2.6")
+
 }
 
 tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "1.8"
+}
+
+tasks.withType<JavaCompile> {
+    options.encoding = "UTF-8"
 }

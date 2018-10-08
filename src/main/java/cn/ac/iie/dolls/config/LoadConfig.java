@@ -13,10 +13,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
+/**
+ * 配置类静态属性加载
+ * @author zhangzhanqi
+ */
 public class LoadConfig {
 
     private static Gson gson = new GsonBuilder().registerTypeAdapter(new TypeToken<Map<String, Object>>() {
@@ -59,6 +61,8 @@ public class LoadConfig {
                                 field.set(null, Double.parseDouble(value.toString()));
                             } else if (field.getType() == String.class) {
                                 field.set(null, value.toString());
+                            } else if (field.getType() == boolean.class) {
+                                field.set(null, Boolean.parseBoolean(value.toString()));
                             } else if (field.getType() == List.class) {
                                 field.set(null, gson.fromJson(value.toString(), new TypeToken<List<String>>() {
                                 }.getType()));
@@ -75,4 +79,37 @@ public class LoadConfig {
                 });
     }
 
+    public static <T> String toString(Class<T> c) {
+        Field[] fields = c.getDeclaredFields();
+        StringBuilder sb = new StringBuilder("{\"" + c.getName() + "\":{");
+        Arrays.stream(fields)
+                .collect(Collectors.toMap(Field::getName, field -> field))
+                .forEach((name, field) -> {
+                    field.setAccessible(true);
+                    sb.append("\"").append(name).append("\"").append(":");
+                    try {
+                        if (field.getType() == int.class) {
+                            sb.append(field.get(name)).append(",");
+                        } else if (field.getType() == long.class) {
+                            sb.append(field.get(name)).append(",");
+                        } else if (field.getType() == double.class) {
+                            sb.append(field.get(name)).append(",");
+                        } else if (field.getType() == String.class) {
+                            sb.append("\"").append(field.get(name)).append("\"").append(",");
+                        } else if (field.getType() == boolean.class) {
+                            sb.append(field.get(name)).append(",");
+                        } else if (field.getType() == List.class) {
+                            sb.append(gson.toJson(field.get(name))).append(",");
+                        } else if (field.getType() == Map.class) {
+                            sb.append(gson.toJson(field.get(name))).append(",");
+                        } else {
+                            sb.append("\"").append("unknown").append("\"").append(",");
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                });
+        sb.deleteCharAt(sb.length() -1);
+        return sb.append("}}").toString();
+    }
 }

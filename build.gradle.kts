@@ -14,12 +14,17 @@ repositories {
 dependencies {
     compile(kotlin("stdlib-jdk8"))
 
+    //db
     compile("com.alibaba", "druid", "1.1.8")
 
+    //mq
     compile("org.apache.rocketmq:rocketmq-client:4.3.0")
+
+    //session
     compile("redis.clients:jedis:2.9.0")
     compile("org.eclipse.jetty:jetty-server:9.4.12.v20180830")
 
+    //config
     compile("com.google.code.gson:gson:2.8.5")
     compile("commons-io:commons-io:2.6")
 

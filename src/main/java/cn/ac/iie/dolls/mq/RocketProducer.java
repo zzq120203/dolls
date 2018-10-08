@@ -56,12 +56,14 @@ public class RocketProducer {
         return result.map(it -> it.getSendStatus() == SendStatus.SEND_OK).orElse(Boolean.FALSE);
     }
 
-    public void start() throws MQClientException {
+    public RocketProducer start() throws MQClientException {
         producer.start();
+        return this;
     }
 
-    public void stop() {
+    public RocketProducer stop() {
         producer.shutdown();
+        return this;
     }
 
     public static final class Builder {

@@ -8,7 +8,6 @@ import redis.clients.jedis.exceptions.JedisException;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class RedisPool {
-    private static Logger log = Log.getLogger(RedisPool.class);
 
     private MMConf conf;
     private JedisSentinelPool jsp = null;
@@ -48,7 +47,7 @@ public class RedisPool {
                     else
                         jp = new JedisPool(c, conf.getHap().getHost(), conf.getHap().getPort(),
                                 conf.getRedisTimeout());
-                    log.info("New standalone pool @ " + conf.getHap().getHost() +
+                    System.out.println("New standalone pool @ " + conf.getHap().getHost() +
                             ":" + conf.getHap().getPort());
                     return jp.getResource();
                 }
@@ -65,7 +64,7 @@ public class RedisPool {
                     else
                         jsp = new JedisSentinelPool(masterName, conf.getSentinels(), c,
                                 conf.getRedisTimeout());
-                    log.info("New sentinel pool @ " + masterName);
+                    System.out.println("New sentinel pool @ " + masterName);
                     return jsp.getResource();
                 }
             }

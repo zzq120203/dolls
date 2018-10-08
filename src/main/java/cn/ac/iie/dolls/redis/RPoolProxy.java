@@ -1,14 +1,11 @@
 package cn.ac.iie.dolls.redis;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.Jedis;
 
 import java.util.HashSet;
 
 public class RPoolProxy {
-    private static Logger log = Log.getLogger(RPoolProxy.class);
     public MMConf conf;
     public RedisPool rpL1 = null;
     public RedisPoolSelector rps = null;
@@ -54,7 +51,7 @@ public class RPoolProxy {
                 break;
             case CLUSTER:
             default:
-                log.warn("RPoolProxy do NOT support CLUSTER or other mode now, " +
+                System.out.println("RPoolProxy do NOT support CLUSTER or other mode now, " +
                         "use STL/STA instead.");
                 break;
         }

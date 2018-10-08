@@ -67,7 +67,7 @@ public class JDBCPool {
         }
     }
 
-    class Builder {
+    public static final class Builder {
         private Map<String, String> config = new HashMap<>();
 
         public JDBCPool build() {

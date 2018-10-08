@@ -70,12 +70,14 @@ public class RocketConsumer {
         }
     }
 
-    public void start() throws MQClientException {
+    public RocketConsumer start() throws MQClientException {
         consumer.start();
+        return this;
     }
 
-    public void stop() {
+    public RocketConsumer stop() {
         consumer.shutdown();
+        return this;
     }
 
     public static final class Builder {

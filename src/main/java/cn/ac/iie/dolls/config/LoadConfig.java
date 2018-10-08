@@ -13,7 +13,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class LoadConfig {
 
@@ -37,16 +39,16 @@ public class LoadConfig {
 
     public static <T> void load(Map<String, String> map, Class<T> c) {
         Field[] fields = c.getDeclaredFields();
-
+        Map<String, String> lcMap = map.entrySet().stream().collect(Collectors.toMap(e -> e.getKey().toLowerCase(), Map.Entry::getValue));
         Arrays.stream(fields)
                 .collect(Collectors.toMap(field -> field.getName().toLowerCase(), field -> field))
                 .forEach((name, field) -> {
-                    if (!map.containsKey(name)) {
+                    if (!lcMap.containsKey(name)) {
                         Optional optional = field.getAnnotation(Optional.class);
                         if (optional == null)
                             throw new RuntimeException(field.getName().toLowerCase() + " uninitialized");
                     } else {
-                        Object value = map.get(name);
+                        Object value = lcMap.get(name);
                         field.setAccessible(true);
                         try {
                             if (field.getType() == int.class) {

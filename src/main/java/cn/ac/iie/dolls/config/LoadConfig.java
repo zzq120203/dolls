@@ -53,20 +53,20 @@ public class LoadConfig {
                         Object value = lcMap.get(name);
                         field.setAccessible(true);
                         try {
-                            if (field.getType() == int.class) {
+                            if (field.getType().isAssignableFrom(int.class)) {
                                 field.setInt(null, Integer.parseInt(value.toString()));
-                            } else if (field.getType() == long.class) {
+                            } else if (field.getType().isAssignableFrom(long.class)) {
                                 field.set(null, Long.parseLong(value.toString()));
-                            } else if (field.getType() == double.class) {
+                            } else if (field.getType().isAssignableFrom(double.class)) {
                                 field.set(null, Double.parseDouble(value.toString()));
-                            } else if (field.getType() == String.class) {
+                            } else if (field.getType().isAssignableFrom(String.class)) {
                                 field.set(null, value.toString());
-                            } else if (field.getType() == boolean.class) {
+                            } else if (field.getType().isAssignableFrom(boolean.class)) {
                                 field.set(null, Boolean.parseBoolean(value.toString()));
-                            } else if (field.getType() == List.class) {
+                            } else if (field.getType().isAssignableFrom(List.class)) {
                                 field.set(null, gson.fromJson(value.toString(), new TypeToken<List<String>>() {
                                 }.getType()));
-                            } else if (field.getType() == Map.class) {
+                            } else if (field.getType().isAssignableFrom(Map.class)) {
                                 field.set(null, gson.fromJson(value.toString(), new TypeToken<Map<String, String>>() {
                                 }.getType()));
                             } else {
@@ -88,19 +88,19 @@ public class LoadConfig {
                     field.setAccessible(true);
                     sb.append("\"").append(name).append("\"").append(":");
                     try {
-                        if (field.getType() == int.class) {
+                        if (field.getType().isAssignableFrom(int.class)) {
                             sb.append(field.get(name)).append(",");
-                        } else if (field.getType() == long.class) {
+                        } else if (field.getType().isAssignableFrom(long.class)) {
                             sb.append(field.get(name)).append(",");
-                        } else if (field.getType() == double.class) {
+                        } else if (field.getType().isAssignableFrom(double.class)) {
                             sb.append(field.get(name)).append(",");
-                        } else if (field.getType() == String.class) {
+                        } else if (field.getType().isAssignableFrom(String.class)) {
                             sb.append("\"").append(field.get(name)).append("\"").append(",");
-                        } else if (field.getType() == boolean.class) {
+                        } else if (field.getType().isAssignableFrom(boolean.class)) {
                             sb.append(field.get(name)).append(",");
-                        } else if (field.getType() == List.class) {
+                        } else if (field.getType().isAssignableFrom(List.class)) {
                             sb.append(gson.toJson(field.get(name))).append(",");
-                        } else if (field.getType() == Map.class) {
+                        } else if (field.getType().isAssignableFrom(Map.class)) {
                             sb.append(gson.toJson(field.get(name))).append(",");
                         } else {
                             sb.append("\"").append("unknown").append("\"").append(",");

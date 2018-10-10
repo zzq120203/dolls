@@ -9,8 +9,13 @@ import cn.ac.iie.di.datadock.rdata.exchange.client.v1.connection.REConnection;
 import cn.ac.iie.di.datadock.rdata.exchange.client.v1.session.FormattedHandler;
 import cn.ac.iie.di.datadock.rdata.exchange.client.v1.session.REReceiveSession;
 import cn.ac.iie.di.datadock.rdata.exchange.client.v1.session.REReceiveSessionBuilder;
+import org.apache.commons.lang3.ObjectUtils;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.Iterator;
+import java.util.List;
 import java.util.function.Function;
 
 /**
@@ -55,6 +60,61 @@ public class IIEConsumer {
             }
         });
 
+    }
+
+    public <Data> void  message(DataFactory<Data> df, Function<Data, Boolean> fun) throws REConnectionException {
+        Data d = df.newInstance();
+        builder.setHandler(new FormattedHandler() {
+            @Override
+            public boolean handle(REMessageExt reMessageExt) {
+                Iterator<REMessageExt.Record> itr =  reMessageExt.getRecordIterator();
+                while (itr.hasNext()) {
+                    REMessageExt.Record rec = itr.next();
+                    try {
+                        for (Field field : d.getClass().getDeclaredFields()) {
+                            field.setAccessible(true);
+                                if (int.class.isAssignableFrom(field.getType())) {
+                                    field.set(d, rec.getInt(field.getName()));
+                                } else if (long.class.isAssignableFrom(field.getType())) {
+                                    field.set(d, rec.getLong(field.getName()));
+                                } else if (double.class.isAssignableFrom(field.getType())) {
+                                    field.set(d, rec.getDouble(field.getName()));
+                                } else if (String.class.isAssignableFrom(field.getType())) {
+                                    field.set(d, rec.getString(field.getName()));
+                                } else if (boolean.class.isAssignableFrom(field.getType())) {
+                                    field.set(d, rec.getBoolean(field.getName()));
+                                } else if (List.class.isAssignableFrom(field.getType())) {
+                                    Type generic = field.getGenericType();
+                                    if (generic == null)
+                                        throw new RuntimeException("unknown data type exception -> " + field.getType());
+                                    if (generic instanceof ParameterizedType) {
+                                        ParameterizedType pt = (ParameterizedType) generic;
+                                        Class gc = (Class) pt.getActualTypeArguments()[0];
+                                        if (Integer.class.isAssignableFrom(gc)) {
+                                            field.set(d, rec.getInts(field.getName()));
+                                        } else if (Long.class.isAssignableFrom(gc)) {
+                                            field.set(d, rec.getLongs(field.getName()));
+                                        } else if (Double.class.isAssignableFrom(gc)) {
+                                            field.set(d, rec.getDoubles(field.getName()));
+                                        } else if (String.class.isAssignableFrom(gc)) {
+                                            field.set(d, rec.getStrings(field.getName()));
+                                        } else if (Boolean.class.isAssignableFrom(gc)) {
+                                            field.set(d, rec.getBooleans(field.getName()));
+                                        }
+                                    }
+                                } else {
+                                    throw new RuntimeException("unknown data type exception -> " + field.getType());
+                                }
+                            }
+                            fun.apply(d);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                }
+                return true;
+            }
+        });
+        receiver = (REReceiveSession) builder.build();
     }
 
     public <T> void  message(Function<REMessageExt.Record, T> fun) throws REConnectionException {

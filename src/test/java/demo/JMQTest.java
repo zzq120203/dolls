@@ -36,7 +36,7 @@ public class JMQTest {
         con.message(messageExt -> {
             byte[] body = messageExt.getBody();
             System.out.print(Arrays.toString(body));
-            return null;//函数需要返回值
+            return true;
         });
         try {
             con.start();

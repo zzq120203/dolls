@@ -12,6 +12,10 @@ public class RPoolProxy {
 
     private Boolean isInit = false;
 
+    public RPoolProxy() {
+        this.conf = new MMConf();
+    }
+
     public RPoolProxy(MMConf conf) {
         if (conf != null)
             this.conf = conf;

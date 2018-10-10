@@ -28,6 +28,15 @@ dependencies {
     compile("com.google.code.gson:gson:2.8.5")
     compile("commons-io:commons-io:2.6")
 
+    //iie mq
+    compile("com.alibaba.rocketmq:rocketmq-client:3.1.8")
+    compile("org.apache.avro:avro:1.8.0")
+    compile("com.google.guava:guava:24.0-jre")
+    compile("org.apache.logging.log4j:log4j-slf4j-impl:2.10.0")
+    compile("org.apache.logging.log4j:log4j-core:2.10.0")
+    compile(fileTree("libs") {
+        include("*.jar")
+    })
 }
 
 tasks.withType<KotlinCompile> {

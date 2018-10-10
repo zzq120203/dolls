@@ -68,6 +68,7 @@ public class IIEProducer {
         Map map = gson.fromJson(data, Map.class);
         for (Field field : c.getDeclaredFields()) {
             field.setAccessible(true);
+            if (map.containsKey(field.getName())) continue;
             String value = map.get(field.getName()).toString();
             try {
                 if (int.class.isAssignableFrom(field.getType())) {

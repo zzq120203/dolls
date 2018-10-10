@@ -36,23 +36,23 @@ public class JIIEMQTest {
             System.out.println(data.toString());
             return true;
         });
-//        con.message(data -> {//支持Map(Struct)
-//            try {
-//                List<String> list = data.getStrings("wb_lpic_name");
-//                String asp = data.getString("asp");
-//                Long pt = data.getLong("pt");
-//                String uid = data.getString("uid");
-//                String cont = data.getString("cont");
-//                System.out.println(list.toString());
-//                System.out.println(asp);
-//                System.out.println(pt);
-//                System.out.println(uid);
-//                System.out.println(cont);
-//            } catch (RESessionException e) {
-//                e.printStackTrace();
-//            }
-//            return true;
-//        });
+        con.message(data -> {//支持Map(Struct)
+            try {
+                List<String> list = data.getStrings("wb_lpic_name");
+                String asp = data.getString("asp");
+                Long pt = data.getLong("pt");
+                String uid = data.getString("uid");
+                String cont = data.getString("cont");
+                System.out.println(list.toString());
+                System.out.println(asp);
+                System.out.println(pt);
+                System.out.println(uid);
+                System.out.println(cont);
+            } catch (RESessionException e) {
+                e.printStackTrace();
+            }
+            return true;
+        });
         con.start();
 
     }

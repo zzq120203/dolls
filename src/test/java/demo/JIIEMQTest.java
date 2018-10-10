@@ -13,7 +13,6 @@ public class JIIEMQTest {
     private static Gson gson = new Gson();
 
     public static void main(String[] args) throws REConnectionException, RESessionException {
-
         IIEProducer pro = new IIEProducer.Builder()
                 .nameSrv("nameSrv")//必要
                 .topic("topic")//必要

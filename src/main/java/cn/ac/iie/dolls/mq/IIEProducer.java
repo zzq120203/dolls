@@ -173,7 +173,7 @@ public class IIEProducer {
             return this;
         }
 
-        public <Data> IIEProducer build() throws REConnectionException {
+        public IIEProducer build() throws REConnectionException {
             conn = new REConnection(nameSrv);
             builder = (RESendSessionBuilder) conn.getSendSessionBuilder(topic);
             for (Field field : c.getDeclaredFields()) {

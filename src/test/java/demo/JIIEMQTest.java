@@ -27,32 +27,32 @@ public class JIIEMQTest {
 
 
         IIEConsumer con = new IIEConsumer.Builder()
-                .nameSrv("10.136.64.28:9877;10.136.64.29:9877;10.136.64.30:9877;10.136.64.31:9877;10.136.64.32:9877;10.136.16.46:9877")//必要
-                .group("zzq-wb")//必要
-                .topic("swb_msg_pic_mq")//必要
+                .nameSrv("nameSrv")//必要
+                .group("group")//必要
+                .topic("topic")//必要
                 .threadNum(2)
                 .build();
         con.message(Data::new, data -> {//不支持Map(Struct)
-            System.out.println(data.getCont());
+            System.out.println(data.toString());
             return true;
         });
-        con.message(data -> {//支持Map(Struct)
-            try {
-                List<String> list = data.getStrings("wb_lpic_name");
-                String asp = data.getString("asp");
-                Long pt = data.getLong("pt");
-                String uid = data.getString("uid");
-                String cont = data.getString("cont");
-                System.out.println(list.toString());
-                System.out.println(asp);
-                System.out.println(pt);
-                System.out.println(uid);
-                System.out.println(cont);
-            } catch (RESessionException e) {
-                e.printStackTrace();
-            }
-            return true;
-        });
+//        con.message(data -> {//支持Map(Struct)
+//            try {
+//                List<String> list = data.getStrings("wb_lpic_name");
+//                String asp = data.getString("asp");
+//                Long pt = data.getLong("pt");
+//                String uid = data.getString("uid");
+//                String cont = data.getString("cont");
+//                System.out.println(list.toString());
+//                System.out.println(asp);
+//                System.out.println(pt);
+//                System.out.println(uid);
+//                System.out.println(cont);
+//            } catch (RESessionException e) {
+//                e.printStackTrace();
+//            }
+//            return true;
+//        });
         con.start();
 
     }

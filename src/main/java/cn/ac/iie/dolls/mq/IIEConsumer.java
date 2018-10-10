@@ -9,7 +9,6 @@ import cn.ac.iie.di.datadock.rdata.exchange.client.v1.connection.REConnection;
 import cn.ac.iie.di.datadock.rdata.exchange.client.v1.session.FormattedHandler;
 import cn.ac.iie.di.datadock.rdata.exchange.client.v1.session.REReceiveSession;
 import cn.ac.iie.di.datadock.rdata.exchange.client.v1.session.REReceiveSessionBuilder;
-import org.apache.commons.lang3.ObjectUtils;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;

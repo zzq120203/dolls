@@ -13,6 +13,7 @@ public class JIIEMQTest {
     private static Gson gson = new Gson();
 
     public static void main(String[] args) throws REConnectionException, RESessionException {
+
         IIEProducer pro = new IIEProducer.Builder()
                 .nameSrv("nameSrv")//必要
                 .topic("topic")//必要
@@ -21,6 +22,7 @@ public class JIIEMQTest {
                 .packageSize(1000)//发送包大小，默认100
                 .data(Data::new)//必要
                 .build();
+        pro.start();
 
         pro.send(gson.toJson(new Data()));
 
@@ -31,7 +33,7 @@ public class JIIEMQTest {
                 .topic("topic")//必要
                 .threadNum(2)
                 .build();
-        con.message(Data::new, data -> {//不支持Map(Struct)
+        con.message(Data::new, data -> {//不支持Map类型(Struct)
             System.out.println(data.toString());
             return true;
         });

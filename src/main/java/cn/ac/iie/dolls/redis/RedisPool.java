@@ -4,7 +4,6 @@ import redis.clients.jedis.*;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -42,7 +41,7 @@ public class RedisPool {
         init();
     }
 
-    private RedisPool init() {
+    private void init() {
         if (redisMode == RedisMode.STANDALONE) {
             String[] s = urls.split(":");
             HostAndPort hap = new HostAndPort(s[0], Integer.parseInt(s[1]));
@@ -72,9 +71,14 @@ public class RedisPool {
             c.setMaxIdle(maxIdle);
             cluster = new JedisCluster(set, c);
         }
-        return this;
     }
 
+    /**
+     * set redisMode -> RedisMode.STANDALONE or RedisMode.SENTINEL
+     * @param r redis接口
+     * @param <T> 返回值类型
+     * @return T
+     */
     public <T> T handler(Handler<T> r) {
         try (Jedis jedis = getResource()) {
             if (jedis != null) {
@@ -85,6 +89,12 @@ public class RedisPool {
         }
     }
 
+    /**
+     * set redisMode -> RedisMode.CLUSTER
+     * @param r cluster接口
+     * @param <T> 返回值类型
+     * @return T
+     */
     public <T> T cluster(Cluster<T> r) {
         return r.apply(cluster);
     }
@@ -115,7 +125,7 @@ public class RedisPool {
 
         private String authToken = null;
 
-        private RedisMode redisMode;
+        private RedisMode redisMode = RedisMode.STANDALONE;
 
         private int timeout = 30 * 1000;
 
@@ -129,36 +139,74 @@ public class RedisPool {
             return new RedisPool(this);
         }
 
+        /**
+         * 设置redis服务地址
+         * STANDALONE -> ip:port
+         * SENTINEL, CLUSTER -> ip:port;ip:port
+         * @param urls redis地址 HostAndPort
+         * @return
+         */
         public Builder urls(String urls) {
             this.urls = urls;
             return this;
         }
 
+        /**
+         * 设置服务口令，可选
+         * @param authToken 口令
+         * @return
+         */
         public Builder authToken(String authToken) {
             this.authToken = authToken;
             return this;
         }
 
+        /**
+         * 设置redis模式
+         * @see RedisMode
+         * @param redisMode redis服务模式， 默认 STANDALONE
+         * @return
+         */
         public Builder redisMode(RedisMode redisMode) {
             this.redisMode = redisMode;
             return this;
         }
 
+        /**
+         * 设置redis超时时间
+         * @param timeout redis超时时间， 默认 30s
+         * @return
+         */
         public Builder timeout(int timeout) {
             this.timeout = timeout;
             return this;
         }
 
+        /**
+         * 设置redis最大连接数
+         * @param maxTotal 最大连接数, 默认8个
+         * @return
+         */
         public Builder maxTotal(int maxTotal) {
             this.maxTotal = maxTotal;
             return this;
         }
 
+        /**
+         * 设置redis最大空闲连接数
+         * @param maxIdle 最大空闲连接数, 默认8个
+         * @return
+         */
         public Builder maxIdle(int maxIdle) {
             this.maxIdle = maxIdle;
             return this;
         }
 
+        /**
+         * STANDALONE下，设置master name
+         * @param masterName standalone master name
+         * @return
+         */
         public Builder masterName(String masterName) {
             this.masterName = masterName;
             return this;

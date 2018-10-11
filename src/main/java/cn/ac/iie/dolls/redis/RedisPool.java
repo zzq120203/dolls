@@ -26,11 +26,11 @@ public class RedisPool {
     private JedisSentinelPool sentinel;
     private JedisCluster cluster;
 
-    public RedisPool(Builder builder) {
+    private RedisPool(Builder builder) {
         this(builder.urls, builder.authToken, builder.redisMode, builder.timeout, builder.maxTotal, builder.maxIdle, builder.masterName);
     }
 
-    private RedisPool(String urls, String authToken, RedisMode redisMode, int timeout, int maxTotal, int maxIdle, String masterName) {
+    public RedisPool(String urls, String authToken, RedisMode redisMode, int timeout, int maxTotal, int maxIdle, String masterName) {
         this.urls = urls;
         this.authToken = authToken;
         this.redisMode = redisMode;

@@ -1,5 +1,5 @@
 package cn.ac.iie.dolls.redis;
 
 public enum RedisMode {
-            STANDALONE, SENTINEL, CLUSTER,
-        }
+    STANDALONE, SENTINEL, CLUSTER,
+}

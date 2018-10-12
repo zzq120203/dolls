@@ -1,4 +1,4 @@
-package cn.ac.iie.dolls.db;
+package zzq.dolls.db;
 
 import com.alibaba.druid.pool.DruidDataSourceFactory;
 

@@ -1,6 +1,6 @@
-package cn.ac.iie.dolls.session
+package zzq.dolls.session
 
-import cn.ac.iie.dolls.redis.RPoolProxy
+import zzq.dolls.redis.RedisPool
 import org.eclipse.jetty.server.session.AbstractSessionDataStore
 import org.eclipse.jetty.server.session.SessionData
 import org.eclipse.jetty.util.annotation.ManagedAttribute
@@ -18,7 +18,7 @@ class RedisSessionDataStore : AbstractSessionDataStore() {
 
     private val key = "RedisSession".toByteArray()
 
-    lateinit var rpp: RPoolProxy
+    lateinit var rpp: RedisPool
 
     internal class ObjectInputStreamWithLoader @Throws(IOException::class, StreamCorruptedException::class)
     constructor(`in`: InputStream, private val loader: ClassLoader?) : ObjectInputStream(`in`) {
@@ -34,13 +34,8 @@ class RedisSessionDataStore : AbstractSessionDataStore() {
         }
     }
 
-    override fun doStart() {
-        rpp.init()
-        super.doStart()
-    }
-
     override fun doStop() {
-        rpp.quit()
+        rpp.close()
         super.doStop()
     }
 
@@ -56,7 +51,7 @@ class RedisSessionDataStore : AbstractSessionDataStore() {
         val load = Runnable {
             try {
                 log.debug("Loading session {} from Redis", id)
-                val session = rpp.jedis { r -> r.hget(key, getCacheKey(id).toByteArray()) }
+                val session = rpp.handler { r -> r.hget(key, getCacheKey(id).toByteArray()) }
                 session?.inputStream()?.use { byteArrayInputStream ->
                     ObjectInputStreamWithLoader(byteArrayInputStream, _context.context.classLoader).use { objectInputStream ->
                         val sd = objectInputStream.readObject() as SessionData
@@ -79,7 +74,7 @@ class RedisSessionDataStore : AbstractSessionDataStore() {
 
     override fun delete(id: String): Boolean {
         log.debug("Deleting session with id {} from Redis", id)
-        return rpp.jedis { r -> r.hdel(key, getCacheKey(id).toByteArray()) != null }
+        return rpp.handler { r -> r.hdel(key, getCacheKey(id).toByteArray()) != null }
     }
 
     override fun doGetExpired(candidates: MutableSet<String>?): MutableSet<String>? {
@@ -132,7 +127,7 @@ class RedisSessionDataStore : AbstractSessionDataStore() {
         ByteArrayOutputStream().use { byteArrayOutputStream ->
             ObjectOutputStream(byteArrayOutputStream).use { objectOutputStream ->
                 objectOutputStream.writeObject(data)
-                rpp.jedis { r -> r.hset(key, getCacheKey(id).toByteArray(), byteArrayOutputStream.toByteArray()) }
+                rpp.handler { r -> r.hset(key, getCacheKey(id).toByteArray(), byteArrayOutputStream.toByteArray()) }
                 log.debug("Session {} saved to Redis, expires {} ", id, data.expiry)
             }
         }
@@ -144,7 +139,7 @@ class RedisSessionDataStore : AbstractSessionDataStore() {
 
         val load = Runnable {
             try {
-                val exists = rpp.jedis { r -> r.hexists(key, getCacheKey(id).toByteArray()) }
+                val exists = rpp.handler { r -> r.hexists(key, getCacheKey(id).toByteArray()) }
                 if (!exists) {
                     reference.set(false)
                 } else {

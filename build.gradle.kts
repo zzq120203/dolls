@@ -1,11 +1,11 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.2.50"
+    kotlin("jvm") version "1.2.71"
 }
 
 group = "cn.ca.iie.dolls"
-version = "2.0"
+version = "3.0"
 
 repositories {
     jcenter()

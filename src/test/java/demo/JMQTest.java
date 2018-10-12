@@ -1,7 +1,7 @@
 package demo;
 
-import cn.ac.iie.dolls.mq.RocketConsumer;
-import cn.ac.iie.dolls.mq.RocketProducer;
+import zzq.dolls.mq.RocketConsumer;
+import zzq.dolls.mq.RocketProducer;
 import org.apache.rocketmq.client.exception.MQBrokerException;
 import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.remoting.exception.RemotingException;

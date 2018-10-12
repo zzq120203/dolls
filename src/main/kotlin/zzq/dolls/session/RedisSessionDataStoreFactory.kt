@@ -1,12 +1,12 @@
-package cn.ac.iie.dolls.session
+package zzq.dolls.session
 
-import cn.ac.iie.dolls.redis.RPoolProxy
+import zzq.dolls.redis.RedisPool
 import org.eclipse.jetty.server.session.AbstractSessionDataStoreFactory
 import org.eclipse.jetty.server.session.SessionDataStore
 import org.eclipse.jetty.server.session.SessionHandler
 
 
-class RedisSessionDataStoreFactory(private var proxy: RPoolProxy): AbstractSessionDataStoreFactory() {
+class RedisSessionDataStoreFactory(private var proxy: RedisPool): AbstractSessionDataStoreFactory() {
 
     @Throws(Exception::class)
     override fun getSessionDataStore(handler: SessionHandler): SessionDataStore {

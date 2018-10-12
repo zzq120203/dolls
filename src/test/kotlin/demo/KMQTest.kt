@@ -1,7 +1,7 @@
 package demo
 
-import cn.ac.iie.dolls.mq.RocketConsumer
-import cn.ac.iie.dolls.mq.RocketProducer
+import zzq.dolls.mq.RocketConsumer
+import zzq.dolls.mq.RocketProducer
 
 fun main(args: Array<String>) {
     val producer = RocketProducer("group", "nameSrv", "instanceName", "topic")

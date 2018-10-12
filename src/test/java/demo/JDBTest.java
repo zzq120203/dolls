@@ -1,7 +1,6 @@
 package demo;
 
-import cn.ac.iie.dolls.db.JDBCPool;
-import cn.ac.iie.dolls.redis.RPoolProxy;
+import zzq.dolls.db.JDBCPool;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -35,9 +34,6 @@ public class JDBTest {
 
         mysql.insert("sql");
         mysql.delete("sql");
-
-
-        RPoolProxy rpp = new RPoolProxy(null);
 
     }
 }

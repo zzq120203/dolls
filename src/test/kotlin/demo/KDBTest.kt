@@ -1,6 +1,6 @@
 package demo
 
-import cn.ac.iie.dolls.db.JDBCPool
+import zzq.dolls.db.JDBCPool
 
 fun main(args: Array<String>) {
 

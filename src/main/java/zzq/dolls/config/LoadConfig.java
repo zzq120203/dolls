@@ -1,4 +1,4 @@
-package cn.ac.iie.dolls.config;
+package zzq.dolls.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

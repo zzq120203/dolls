@@ -1,4 +1,4 @@
-package cn.ac.iie.dolls.mq;
+package zzq.dolls.mq;
 
 import cn.ac.iie.di.datadock.rdata.exchange.client.core.session.receive.REAbstractReceiveMessageHandler;
 import cn.ac.iie.di.datadock.rdata.exchange.client.exception.REConnectionException;

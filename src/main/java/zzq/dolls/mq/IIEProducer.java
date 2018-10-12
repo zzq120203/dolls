@@ -1,4 +1,4 @@
-package cn.ac.iie.dolls.mq;
+package zzq.dolls.mq;
 
 import cn.ac.iie.di.datadock.rdata.exchange.client.core.REFieldType;
 import cn.ac.iie.di.datadock.rdata.exchange.client.exception.REConnectionException;

@@ -1,4 +1,4 @@
-package cn.ac.iie.dolls.redis;
+package zzq.dolls.redis;
 
 import redis.clients.jedis.JedisCluster;
 

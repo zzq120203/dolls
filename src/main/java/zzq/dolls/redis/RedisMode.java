@@ -1,4 +1,4 @@
-package cn.ac.iie.dolls.redis;
+package zzq.dolls.redis;
 
 /**
  * redis服务模式

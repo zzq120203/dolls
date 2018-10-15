@@ -7,7 +7,7 @@ plugins {
 }
 
 group 'cn.ca.iie.dolls'
-version '1.0'
+version '3.0'
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 
@@ -48,12 +48,12 @@ tasks.withType(JavaCompile) {
     //options.compilerArgs << "-Xlint:unchecked"
 }
 
-jar {
-    manifest {
-        attributes 'Main-Class': 'cn.ac.iie.analysis.Main'
-        attributes 'Class-Path': cp()
-    }
-}
+//jar {
+//    manifest {
+//        attributes 'Main-Class': 'cn.ac.iie.dolls.Main'
+//        attributes 'Class-Path': cp()
+//    }
+//}
 
 @Field static String libs = "outLibs"
 

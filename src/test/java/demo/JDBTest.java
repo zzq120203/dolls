@@ -12,12 +12,11 @@ public class JDBTest {
 
     public static void main(String[] args) throws SQLException {
 
-        Map<String, String> config = new HashMap<>();
-        config.put("url", "jdbc:mysql://localhost:3306/mydb?useSSL=false");
-        config.put("username", "iie");
-        config.put("password", "iie");
-
-        JDBCPool mysql = new JDBCPool(config);
+        JDBCPool mysql = new JDBCPool.Builder()
+                .url("jdbc:mysql://localhost:3306/mydb?useSSL=false")
+                .userName("iie")
+                .password("iie")
+                .build();
 
         List<String> select = mysql.select("select 1", rs -> {
             List<String> list = new ArrayList<>();

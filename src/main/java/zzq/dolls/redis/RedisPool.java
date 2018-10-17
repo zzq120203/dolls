@@ -80,6 +80,8 @@ public class RedisPool {
      * @return T
      */
     public <T> T handler(Handler<T> r) {
+        if (redisMode != RedisMode.STANDALONE && redisMode != RedisMode.SENTINEL)
+            throw new IllegalThreadStateException("redis mode is not standalone or sentinel");
         try (Jedis jedis = getResource()) {
             if (jedis != null) {
                 return r.apply(jedis);
@@ -96,6 +98,8 @@ public class RedisPool {
      * @return T
      */
     public <T> T cluster(Cluster<T> r) {
+        if (redisMode != RedisMode.CLUSTER)
+            throw new IllegalThreadStateException("redis mode is not cluster");
         return r.apply(cluster);
     }
 

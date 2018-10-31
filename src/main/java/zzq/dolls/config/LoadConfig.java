@@ -3,6 +3,7 @@ package zzq.dolls.config;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializer;
+import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 import org.apache.commons.io.FileUtils;
 
@@ -43,7 +44,7 @@ public class LoadConfig {
         Field[] fields = c.getDeclaredFields();
         Map<String, String> lcMap = map.entrySet().stream().collect(Collectors.toMap(e -> e.getKey().toLowerCase(), Map.Entry::getValue));
         Arrays.stream(fields)
-                .collect(Collectors.toMap(field -> field.getName().toLowerCase(), field -> field))
+                .collect(Collectors.toMap(LoadConfig::getFieldName, field -> field))
                 .forEach((name, field) -> {
                     if (!lcMap.containsKey(name)) {
                         Optional optional = field.getAnnotation(Optional.class);
@@ -77,6 +78,18 @@ public class LoadConfig {
                         }
                     }
                 });
+    }
+
+    private static String getFieldName(Field field) {
+        From from = field.getAnnotation(From.class);
+        if (from != null) {
+            return from.value();
+        }
+        SerializedName serializedName = field.getAnnotation(SerializedName.class);
+        if (serializedName != null) {
+            return serializedName.value();
+        }
+        return field.getName();
     }
 
     public static <T> String toString(Class<T> c) {

@@ -6,14 +6,18 @@ import com.google.gson.JsonDeserializer;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 import org.apache.commons.io.FileUtils;
+import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Properties;
 import java.util.stream.Collectors;
 
 /**
@@ -24,14 +28,53 @@ public class LoadConfig {
 
     private static Gson gson = new GsonBuilder().registerTypeAdapter(new TypeToken<Map<String, Object>>() {
     }.getType(), (JsonDeserializer<Map<String, Object>>) (json, typeOfT, context) -> {
-        Map<String, Object> map = json.getAsJsonObject().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        Map<String, Object> map = json.getAsJsonObject().entrySet().stream().collect(Collectors.toMap(Entry::getKey, Entry::getValue));
         return map;
     }).create();
 
 
-    public static <T> void load(File file, Class<T> c) throws IOException {
-        String json = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
-        load(json, c);
+    public static <T> void load(File file, Class<T> c, FileType type) throws IOException {
+        switch (type) {
+            case JSON: {
+                String json = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
+                load(json, c);
+                break;
+            }
+            case PROPERTIES: {
+                Properties props = new Properties();
+                try (FileInputStream stream = new FileInputStream(file)) {
+                    props.load(stream);
+                    Map<String, String> map = props.entrySet().stream()
+                            .collect(Collectors.toMap(e -> e.getKey().toString(), e -> e.getValue().toString()));
+                    load(map, c);
+                }
+                break;
+            }
+            case XML: {
+                Properties props = new Properties();
+                try (FileInputStream stream = new FileInputStream(file)) {
+                    props.loadFromXML(stream);
+                    Map<String, String> map = props.entrySet().stream()
+                            .collect(Collectors.toMap(e -> e.getKey().toString(), e -> e.getValue().toString()));
+                    load(map, c);
+                }
+                break;
+            }
+            case YAML: {
+                try (FileInputStream stream = new FileInputStream(file)) {
+                    Yaml yaml = new Yaml();
+                    Map<String, String> map = yaml.load(stream);
+                    load(map, c);
+                }
+                break;
+            }
+            case HOCON: {
+                throw new IOException("undefinition");
+            }
+            case INI: {
+                throw new IOException("undefinition");
+            }
+        }
     }
 
     public static <T> void load(String json, Class<T> c) {
@@ -42,7 +85,7 @@ public class LoadConfig {
 
     public static <T> void load(Map<String, String> map, Class<T> c) {
         Field[] fields = c.getDeclaredFields();
-        Map<String, String> lcMap = map.entrySet().stream().collect(Collectors.toMap(e -> e.getKey().toLowerCase(), Map.Entry::getValue));
+        Map<String, String> lcMap = map.entrySet().stream().collect(Collectors.toMap(e -> e.getKey().toLowerCase(), Entry::getValue));
         Arrays.stream(fields)
                 .collect(Collectors.toMap(LoadConfig::getFieldName, field -> field))
                 .forEach((name, field) -> {

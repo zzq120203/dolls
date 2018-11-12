@@ -105,7 +105,7 @@ public class JDBCPool {
          * @return
          */
         public Builder initialSize(int initialSize) {
-            config.put("url", String.valueOf(initialSize));
+            config.put("initialSize", String.valueOf(initialSize));
             return this;
         }
 
@@ -115,7 +115,7 @@ public class JDBCPool {
          * @return
          */
         public Builder maxActive(int maxActive) {
-            config.put("url", String.valueOf(maxActive));
+            config.put("maxActive", String.valueOf(maxActive));
             return this;
         }
 
@@ -125,7 +125,7 @@ public class JDBCPool {
          * @return
          */
         public Builder maxWait(int maxWait) {
-            config.put("url", String.valueOf(maxWait));
+            config.put("maxWait", String.valueOf(maxWait));
             return this;
         }
 
@@ -135,7 +135,7 @@ public class JDBCPool {
          * @return
          */
         public Builder timeBetweenEvictionRunsMillis(int timeBetweenEvictionRunsMillis) {
-            config.put("url", String.valueOf(timeBetweenEvictionRunsMillis));
+            config.put("timeBetweenEvictionRunsMillis", String.valueOf(timeBetweenEvictionRunsMillis));
             return this;
         }
 
@@ -145,7 +145,7 @@ public class JDBCPool {
          * @return
          */
         public Builder minEvictableIdleTimeMillis(int minEvictableIdleTimeMillis) {
-            config.put("url", String.valueOf(minEvictableIdleTimeMillis));
+            config.put("minEvictableIdleTimeMillis", String.valueOf(minEvictableIdleTimeMillis));
             return this;
         }
 
@@ -154,8 +154,8 @@ public class JDBCPool {
          * @param validationQuery 默认 stat
          * @return
          */
-        public Builder uvalidationQueryrl(String validationQuery) {
-            config.put("url", validationQuery);
+        public Builder validationQuery(String validationQuery) {
+            config.put("validationQuery", validationQuery);
             return this;
         }
 
@@ -165,7 +165,7 @@ public class JDBCPool {
          * @return
          */
         public Builder testWhileIdle(boolean testWhileIdle) {
-            config.put("url", String.valueOf(testWhileIdle));
+            config.put("testWhileIdle", String.valueOf(testWhileIdle));
             return this;
         }
 
@@ -175,7 +175,7 @@ public class JDBCPool {
          * @return
          */
         public Builder testOnBorrow(boolean testOnBorrow) {
-            config.put("url", String.valueOf(testOnBorrow));
+            config.put("testOnBorrow", String.valueOf(testOnBorrow));
             return this;
         }
 
@@ -185,7 +185,7 @@ public class JDBCPool {
          * @return
          */
         public Builder testOnReturn(boolean testOnReturn) {
-            config.put("url", String.valueOf(testOnReturn));
+            config.put("testOnReturn", String.valueOf(testOnReturn));
             return this;
         }
 
@@ -195,7 +195,7 @@ public class JDBCPool {
          * @return
          */
         public Builder poolPreparedStatements(boolean poolPreparedStatements) {
-            config.put("url", String.valueOf(poolPreparedStatements));
+            config.put("poolPreparedStatements", String.valueOf(poolPreparedStatements));
             return this;
         }
 
@@ -205,7 +205,7 @@ public class JDBCPool {
          * @return
          */
         public Builder maxPoolPreparedStatementPerConnectionSize(int maxPoolPreparedStatementPerConnectionSize) {
-            config.put("url", String.valueOf(maxPoolPreparedStatementPerConnectionSize));
+            config.put("maxPoolPreparedStatementPerConnectionSize", String.valueOf(maxPoolPreparedStatementPerConnectionSize));
             return this;
         }
     }

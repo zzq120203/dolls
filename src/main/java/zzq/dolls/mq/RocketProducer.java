@@ -52,8 +52,8 @@ public class RocketProducer {
     }
 
     public boolean send(String data, String tag) throws InterruptedException, RemotingException, MQClientException, MQBrokerException {
-        Optional<SendResult> result = Optional.ofNullable(producer.send(new Message(topic, tag, data.getBytes())));
-        return result.map(it -> it.getSendStatus() == SendStatus.SEND_OK).orElse(Boolean.FALSE);
+        SendResult result = producer.send(new Message(topic, tag, data.getBytes()));
+        return result != null ? result.getSendStatus() == SendStatus.SEND_OK : Boolean.FALSE;
     }
 
     public RocketProducer start() throws MQClientException {

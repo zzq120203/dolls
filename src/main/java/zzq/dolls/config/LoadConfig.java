@@ -44,7 +44,7 @@ public class LoadConfig {
                 Properties props = new Properties();
                 try (FileInputStream stream = new FileInputStream(file)) {
                     props.load(stream);
-                    Map<String, String> map = props.entrySet().stream()
+                    Map<String, Object> map = props.entrySet().stream()
                             .collect(Collectors.toMap(e -> e.getKey().toString(), e -> e.getValue().toString()));
                     load(map, c);
                 }
@@ -54,8 +54,8 @@ public class LoadConfig {
                 Properties props = new Properties();
                 try (FileInputStream stream = new FileInputStream(file)) {
                     props.loadFromXML(stream);
-                    Map<String, String> map = props.entrySet().stream()
-                            .collect(Collectors.toMap(e -> e.getKey().toString(), e -> e.getValue().toString()));
+                    Map<String, Object> map = props.entrySet().stream()
+                            .collect(Collectors.toMap(e -> e.getKey().toString(), Entry::getValue));
                     load(map, c);
                 }
                 break;
@@ -63,7 +63,7 @@ public class LoadConfig {
             case YAML: {
                 try (FileInputStream stream = new FileInputStream(file)) {
                     Yaml yaml = new Yaml();
-                    Map<String, String> map = yaml.load(stream);
+                    Map<String, Object> map = yaml.load(stream);
                     load(map, c);
                 }
                 break;
@@ -78,14 +78,14 @@ public class LoadConfig {
     }
 
     public static <T> void load(String json, Class<T> c) {
-        Map<String, String> map = gson.fromJson(json, new TypeToken<Map<String, String>>() {
+        Map<String, Object> map = gson.fromJson(json, new TypeToken<Map<String, Object>>() {
         }.getType());
         load(map, c);
     }
 
-    public static <T> void load(Map<String, String> map, Class<T> c) {
+    public static <T> void load(Map<String, Object> map, Class<T> c) {
         Field[] fields = c.getDeclaredFields();
-        Map<String, String> lcMap = map.entrySet().stream().collect(Collectors.toMap(e -> e.getKey().toLowerCase(), Entry::getValue));
+        Map<String, Object> lcMap = map.entrySet().stream().collect(Collectors.toMap(e -> e.getKey().toLowerCase(), Entry::getValue));
         Arrays.stream(fields)
                 .collect(Collectors.toMap(LoadConfig::getFieldName, field -> field))
                 .forEach((name, field) -> {
@@ -108,10 +108,10 @@ public class LoadConfig {
                             } else if (field.getType().isAssignableFrom(boolean.class)) {
                                 field.set(null, Boolean.parseBoolean(value.toString()));
                             } else if (field.getType().isAssignableFrom(List.class)) {
-                                field.set(null, gson.fromJson(value.toString(), new TypeToken<List<String>>() {
+                                field.set(null, gson.fromJson(gson.toJson(value), new TypeToken<List<String>>() {
                                 }.getType()));
                             } else if (field.getType().isAssignableFrom(Map.class)) {
-                                field.set(null, gson.fromJson(value.toString(), new TypeToken<Map<String, String>>() {
+                                field.set(null, gson.fromJson(gson.toJson(value), new TypeToken<Map<String, String>>() {
                                 }.getType()));
                             } else {
                                 throw new RuntimeException("unknown data type exception -> " + field.getType());
@@ -126,13 +126,13 @@ public class LoadConfig {
     private static String getFieldName(Field field) {
         From from = field.getAnnotation(From.class);
         if (from != null) {
-            return from.value();
+            return from.value().toLowerCase();
         }
         SerializedName serializedName = field.getAnnotation(SerializedName.class);
         if (serializedName != null) {
-            return serializedName.value();
+            return serializedName.value().toLowerCase();
         }
-        return field.getName();
+        return field.getName().toLowerCase();
     }
 
     public static <T> String toString(Class<T> c) {

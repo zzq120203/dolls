@@ -3,12 +3,10 @@ package zzq.dolls.db;
 import com.alibaba.druid.pool.DruidDataSourceFactory;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class JDBCPool {
@@ -227,6 +225,15 @@ public class JDBCPool {
         }
     }
 
+    public <T> T select(String sql, BiFunction<PreparedStatement, ResultSet, T> fun) throws SQLException {
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet resultSet = statement.executeQuery(sql)
+        ) {
+            return fun.apply(statement, resultSet);
+        }
+    }
+
     /**
      * 更新操作
      * @param sql sql语句
@@ -241,6 +248,14 @@ public class JDBCPool {
         }
     }
 
+    public int update(String sql, Function<PreparedStatement, Integer> fun) throws SQLException {
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)
+        ) {
+            return fun.apply(statement);
+        }
+    }
+
     /**
      * 插入操作
      * @param sql sql语句
@@ -251,6 +266,10 @@ public class JDBCPool {
         return update(sql);
     }
 
+    public int insert(String sql, Function<PreparedStatement, Integer> fun) throws SQLException {
+        return update(sql, fun);
+    }
+
     /**
      * 删除操作
      * @param sql sql语句
@@ -259,6 +278,10 @@ public class JDBCPool {
      */
     public int delete(String sql) throws SQLException {
         return update(sql);
+    }
+
+    public int delete(String sql, Function<PreparedStatement, Integer> fun) throws SQLException {
+        return update(sql, fun);
     }
 
 }

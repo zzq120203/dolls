@@ -1,13 +1,13 @@
 package zzq.dolls.db;
 
 import com.alibaba.druid.pool.DruidDataSourceFactory;
+import zzq.dolls.function.BiFunctionThrows;
+import zzq.dolls.function.FunctionThrows;
 
 import javax.sql.DataSource;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 
 public class JDBCPool {
 
@@ -216,7 +216,7 @@ public class JDBCPool {
      * @return T
      * @throws SQLException 默认sql异常
      */
-    public <T> T select(String sql, Function<ResultSet, T> fun) throws SQLException {
+    public <T> T select(String sql, FunctionThrows<ResultSet, T, SQLException> fun) throws SQLException {
         try (Connection connection = dataSource.getConnection();
              Statement statement = connection.createStatement();
              ResultSet resultSet = statement.executeQuery(sql)
@@ -225,7 +225,7 @@ public class JDBCPool {
         }
     }
 
-    public <T> T select(String sql, BiFunction<PreparedStatement, ResultSet, T> fun) throws SQLException {
+    public <T> T select(String sql, BiFunctionThrows<PreparedStatement, ResultSet, T, SQLException> fun) throws SQLException {
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql);
              ResultSet resultSet = statement.executeQuery(sql)
@@ -248,7 +248,7 @@ public class JDBCPool {
         }
     }
 
-    public int update(String sql, Function<PreparedStatement, Integer> fun) throws SQLException {
+    public int update(String sql, FunctionThrows<PreparedStatement, Integer, SQLException> fun) throws SQLException {
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)
         ) {
@@ -266,7 +266,7 @@ public class JDBCPool {
         return update(sql);
     }
 
-    public int insert(String sql, Function<PreparedStatement, Integer> fun) throws SQLException {
+    public int insert(String sql, FunctionThrows<PreparedStatement, Integer, SQLException> fun) throws SQLException {
         return update(sql, fun);
     }
 
@@ -280,7 +280,7 @@ public class JDBCPool {
         return update(sql);
     }
 
-    public int delete(String sql, Function<PreparedStatement, Integer> fun) throws SQLException {
+    public int delete(String sql, FunctionThrows<PreparedStatement, Integer, SQLException> fun) throws SQLException {
         return update(sql, fun);
     }
 

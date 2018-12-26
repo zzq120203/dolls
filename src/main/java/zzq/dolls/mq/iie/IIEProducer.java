@@ -151,7 +151,6 @@ public class IIEProducer {
         handler = false;
         flush();
         sender.shutdown();
-        conn.close();
         return this;
     }
 

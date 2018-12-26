@@ -154,7 +154,7 @@ public class IIEProducer {
         return this;
     }
 
-    public static final class Builder<T> {
+    public static final class Builder {
         private String topic;
 
         private String schemaName;

@@ -1,4 +1,4 @@
-package zzq.dolls.mq;
+package zzq.dolls.mq.iie;
 
 import cn.ac.iie.di.datadock.rdata.exchange.client.core.session.receive.REAbstractReceiveMessageHandler;
 import cn.ac.iie.di.datadock.rdata.exchange.client.exception.REConnectionException;
@@ -24,30 +24,25 @@ import java.util.function.Function;
 public class IIEConsumer {
 
     private String group;
-    private String nameSrv;
     private String topic;
-    private int threadNum = 1;
+    private int threadNum;
 
     private REReceiveSession receiver;
-
-    private REConnection conn;
 
     private REReceiveSessionBuilder builder;
 
     private IIEConsumer(Builder builder) throws REConnectionException {
-        this(builder.group, builder.nameSrv, builder.topic, builder.threadNum);
+        this(builder.conn, builder.group, builder.topic, builder.threadNum);
     }
 
-    private IIEConsumer(String group, String nameSrv, String topic, int threadNum) throws REConnectionException {
+    private IIEConsumer(REConnection conn, String group, String topic, int threadNum) throws REConnectionException {
         this.group = group;
-        this.nameSrv = nameSrv;
         this.topic = topic;
         this.threadNum = threadNum;
-        init();
+        init(conn);
     }
 
-    private void init() throws REConnectionException {
-        conn = new REConnection(nameSrv);
+    private void init(REConnection conn) throws REConnectionException {
         builder = (REReceiveSessionBuilder) conn.getReceiveSessionBuilder(topic);
         builder.setGroupName(group);
         builder.setConsumPosition(ConsumePosition.CONSUME_FROM_FIRST_OFFSET);
@@ -138,15 +133,20 @@ public class IIEConsumer {
 
     public IIEConsumer stop() throws REConnectionException {
         receiver.shutdown();
-        conn.close();
         return this;
     }
 
     public static final class Builder {
+
         private String group;
-        private String nameSrv;
         private String topic;
         private int threadNum = 1;
+
+        private REConnection conn;
+
+        public Builder(REConnection conn) {
+            this.conn = conn;
+        }
 
         public IIEConsumer build() throws REConnectionException {
             return new IIEConsumer(this);
@@ -154,11 +154,6 @@ public class IIEConsumer {
 
         public Builder group(String group) {
             this.group = group;
-            return this;
-        }
-
-        public Builder nameSrv(String nameSrv) {
-            this.nameSrv = nameSrv;
             return this;
         }
 

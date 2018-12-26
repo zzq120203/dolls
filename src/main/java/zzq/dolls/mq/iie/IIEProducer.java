@@ -1,4 +1,4 @@
-package zzq.dolls.mq;
+package zzq.dolls.mq.iie;
 
 import cn.ac.iie.di.datadock.rdata.exchange.client.core.REFieldType;
 import cn.ac.iie.di.datadock.rdata.exchange.client.exception.REConnectionException;
@@ -33,11 +33,11 @@ public class IIEProducer {
     private String schemaName;
     private String user;
     private String password;
-    private String round = "all";
+    private String round;
 
     private HashMap<String, String> user_desc = new HashMap<>();
 
-    private int packageSize = 100;
+    private int packageSize;
 
     private RESendSession sender;
 
@@ -62,6 +62,10 @@ public class IIEProducer {
         this.round = round;
         this.packageSize = packageSize;
         this.c = c;
+    }
+
+    public <Data> boolean send(Data data) throws RESessionException {
+        return send(gson.toJson(data));
     }
 
     public boolean send(String data) throws RESessionException {
@@ -151,8 +155,7 @@ public class IIEProducer {
         return this;
     }
 
-    public static final class Builder {
-        private String nameSrv;
+    public static final class Builder<T> {
         private String topic;
 
         private String schemaName;
@@ -168,13 +171,16 @@ public class IIEProducer {
 
         private Class c;
 
+        public Builder(REConnection conn) {
+            this.conn = conn;
+        }
+
         public <Data> Builder data(DataFactory<Data> df) {
             c = df.newInstance().getClass();
             return this;
         }
 
         public IIEProducer build() throws REConnectionException {
-            conn = new REConnection(nameSrv);
             builder = (RESendSessionBuilder) conn.getSendSessionBuilder(topic);
             for (Field field : c.getDeclaredFields()) {
                 field.setAccessible(true);
@@ -215,11 +221,6 @@ public class IIEProducer {
                 }
             }
             return new IIEProducer(this);
-        }
-
-        public Builder nameSrv(String nameSrv) {
-            this.nameSrv = nameSrv;
-            return this;
         }
 
         public Builder topic(String topic) {

@@ -1,4 +1,4 @@
-package zzq.dolls.mq;
+package zzq.dolls.mq.rocket;
 
 import org.apache.rocketmq.client.exception.MQBrokerException;
 import org.apache.rocketmq.client.exception.MQClientException;
@@ -7,8 +7,6 @@ import org.apache.rocketmq.client.producer.SendResult;
 import org.apache.rocketmq.client.producer.SendStatus;
 import org.apache.rocketmq.common.message.Message;
 import org.apache.rocketmq.remoting.exception.RemotingException;
-
-import java.util.Optional;
 
 public class RocketProducer {
 

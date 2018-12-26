@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
  */
 public class LoadConfig {
 
-    private static Gson gson = new GsonBuilder().registerTypeAdapter(new TypeToken<Map<String, Object>>() {
+    static Gson gson = new GsonBuilder().registerTypeAdapter(new TypeToken<Map<String, Object>>() {
     }.getType(), (JsonDeserializer<Map<String, Object>>) (json, typeOfT, context) -> {
         Map<String, Object> map = json.getAsJsonObject().entrySet().stream().collect(Collectors.toMap(Entry::getKey, Entry::getValue));
         return map;

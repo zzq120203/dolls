@@ -23,6 +23,10 @@ public class IIEClient {
         this.conn.close();
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
     public static final class Builder {
         private String url;
 

@@ -26,26 +26,28 @@ public class IIEConsumer {
     private String group;
     private String topic;
     private int threadNum;
+    private ConsumePosition consumeFromWhere;
 
     private REReceiveSession receiver;
 
     private REReceiveSessionBuilder builder;
 
     private IIEConsumer(Builder builder) throws REConnectionException {
-        this(builder.conn, builder.group, builder.topic, builder.threadNum);
+        this(builder.conn, builder.group, builder.topic, builder.threadNum, builder.consumeFromWhere);
     }
 
-    private IIEConsumer(REConnection conn, String group, String topic, int threadNum) throws REConnectionException {
+    private IIEConsumer(REConnection conn, String group, String topic, int threadNum, ConsumePosition consumeFromWhere) throws REConnectionException {
         this.group = group;
         this.topic = topic;
         this.threadNum = threadNum;
+        this.consumeFromWhere = consumeFromWhere;
         init(conn);
     }
 
     private void init(REConnection conn) throws REConnectionException {
         builder = (REReceiveSessionBuilder) conn.getReceiveSessionBuilder(topic);
         builder.setGroupName(group);
-        builder.setConsumPosition(ConsumePosition.CONSUME_FROM_FIRST_OFFSET);
+        builder.setConsumPosition(consumeFromWhere);
         builder.setConsumeThreadNum(threadNum);
         builder.setFailureHandler(new REAbstractReceiveMessageHandler<FailureMessage>() {
             @Override
@@ -142,6 +144,8 @@ public class IIEConsumer {
         private String topic;
         private int threadNum = 1;
 
+        private ConsumePosition consumeFromWhere = ConsumePosition.CONSUME_FROM_FIRST_OFFSET;
+
         private REConnection conn;
 
         public Builder(REConnection conn) {
@@ -164,6 +168,11 @@ public class IIEConsumer {
 
         public Builder threadNum(int threadNum) {
             this.threadNum = threadNum;
+            return this;
+        }
+
+        public Builder consumeFromWhere(ConsumePosition consumeFromWhere) {
+            this.consumeFromWhere = consumeFromWhere;
             return this;
         }
 

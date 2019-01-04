@@ -13,11 +13,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Properties;
 import java.util.stream.Collectors;
 
 /**
@@ -85,45 +82,87 @@ public class LoadConfig {
 
     public static <T> void load(Map<String, Object> map, Class<T> c) {
         Field[] fields = c.getDeclaredFields();
-        Map<String, Object> lcMap = map.entrySet().stream().collect(Collectors.toMap(e -> e.getKey().toLowerCase(), Entry::getValue));
-        Arrays.stream(fields)
-                .collect(Collectors.toMap(LoadConfig::getFieldName, field -> field))
-                .forEach((name, field) -> {
-                    if (!lcMap.containsKey(name)) {
-                        Optional optional = field.getAnnotation(Optional.class);
-                        if (optional == null)
-                            throw new RuntimeException(field.getName().toLowerCase() + " uninitialized");
+        Map<String, Object> lcMap = new HashMap<>();
+        map.forEach((k, v) -> lcMap.put(k.toLowerCase(), v));
+        for (Field field : fields) {
+            String name = getFieldName(field);
+            if (!lcMap.containsKey(name)) {
+                Optional optional = field.getAnnotation(Optional.class);
+                if (optional == null)
+                    throw new RuntimeException(field.getName().toLowerCase() + " uninitialized");
+            } else {
+                Object value = lcMap.get(name);
+                field.setAccessible(true);
+                try {
+                    if (field.getType().isAssignableFrom(int.class)) {
+                        field.setInt(null, Integer.parseInt(value.toString()));
+                    } else if (field.getType().isAssignableFrom(long.class)) {
+                        field.set(null, Long.parseLong(value.toString()));
+                    } else if (field.getType().isAssignableFrom(double.class)) {
+                        field.set(null, Double.parseDouble(value.toString()));
+                    } else if (field.getType().isAssignableFrom(String.class)) {
+                        if (value == null || value.toString().toLowerCase().equals("null")) field.set(null, null);
+                        else field.set(null, value.toString());
+                    } else if (field.getType().isAssignableFrom(boolean.class)) {
+                        field.set(null, Boolean.parseBoolean(value.toString()));
+                    } else if (field.getType().isAssignableFrom(List.class)) {
+                        field.set(null, gson.fromJson(gson.toJson(value), new TypeToken<List<String>>() {
+                        }.getType()));
+                    } else if (field.getType().isAssignableFrom(Map.class)) {
+                        field.set(null, gson.fromJson(gson.toJson(value), new TypeToken<Map<String, String>>() {
+                        }.getType()));
                     } else {
-                        Object value = lcMap.get(name);
-                        field.setAccessible(true);
-                        try {
-                            if (field.getType().isAssignableFrom(int.class)) {
-                                field.setInt(null, Integer.parseInt(value.toString()));
-                            } else if (field.getType().isAssignableFrom(long.class)) {
-                                field.set(null, Long.parseLong(value.toString()));
-                            } else if (field.getType().isAssignableFrom(double.class)) {
-                                field.set(null, Double.parseDouble(value.toString()));
-                            } else if (field.getType().isAssignableFrom(String.class)) {
-                                field.set(null, value.toString());
-                            } else if (field.getType().isAssignableFrom(boolean.class)) {
-                                field.set(null, Boolean.parseBoolean(value.toString()));
-                            } else if (field.getType().isAssignableFrom(List.class)) {
-                                field.set(null, gson.fromJson(gson.toJson(value), new TypeToken<List<String>>() {
-                                }.getType()));
-                            } else if (field.getType().isAssignableFrom(Map.class)) {
-                                field.set(null, gson.fromJson(gson.toJson(value), new TypeToken<Map<String, String>>() {
-                                }.getType()));
-                            } else {
-                                throw new RuntimeException("unknown data type exception -> " + field.getType());
-                            }
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
+                        throw new RuntimeException("unknown data type exception -> " + field.getType());
                     }
-                });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
-    private static String getFieldName(Field field) {
+    public static <T> void loadStringMap(Map<String, String> map, Class<T> c) {
+        Field[] fields = c.getDeclaredFields();
+        Map<String, String> lcMap = new HashMap<>();
+        map.forEach((k, v) -> lcMap.put(k.toLowerCase(), v));
+        for (Field field : fields) {
+            String name = getFieldName(field);
+            if (!lcMap.containsKey(name)) {
+                Optional optional = field.getAnnotation(Optional.class);
+                if (optional == null)
+                    throw new RuntimeException(field.getName().toLowerCase() + " uninitialized");
+            } else {
+                String value = lcMap.get(name);
+                field.setAccessible(true);
+                try {
+                    if (field.getType().isAssignableFrom(int.class)) {
+                        field.setInt(null, Integer.parseInt(value));
+                    } else if (field.getType().isAssignableFrom(long.class)) {
+                        field.set(null, Long.parseLong(value));
+                    } else if (field.getType().isAssignableFrom(double.class)) {
+                        field.set(null, Double.parseDouble(value));
+                    } else if (field.getType().isAssignableFrom(String.class)) {
+                        if (value == null || value.toLowerCase().equals("null")) field.set(null, null);
+                        else field.set(null, value);
+                    } else if (field.getType().isAssignableFrom(boolean.class)) {
+                        field.set(null, Boolean.parseBoolean(value));
+                    } else if (field.getType().isAssignableFrom(List.class)) {
+                        field.set(null, gson.fromJson(value, new TypeToken<List<String>>() {
+                        }.getType()));
+                    } else if (field.getType().isAssignableFrom(Map.class)) {
+                        field.set(null, gson.fromJson(value, new TypeToken<Map<String, String>>() {
+                        }.getType()));
+                    } else {
+                        throw new RuntimeException("unknown data type exception -> " + field.getType());
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    static String getFieldName(Field field) {
         From from = field.getAnnotation(From.class);
         if (from != null) {
             return from.value().toLowerCase();
@@ -136,35 +175,41 @@ public class LoadConfig {
     }
 
     public static <T> String toString(Class<T> c) {
+        return toString(c, false);
+    }
+
+    public static <T> String toString(Class<T> c, boolean showFiledName) {
         Field[] fields = c.getDeclaredFields();
         StringBuilder sb = new StringBuilder("{\"" + c.getName() + "\":{");
-        Arrays.stream(fields)
-                .collect(Collectors.toMap(Field::getName, field -> field))
-                .forEach((name, field) -> {
-                    field.setAccessible(true);
-                    sb.append("\"").append(name).append("\"").append(":");
-                    try {
-                        if (field.getType().isAssignableFrom(int.class)) {
-                            sb.append(field.get(name)).append(",");
-                        } else if (field.getType().isAssignableFrom(long.class)) {
-                            sb.append(field.get(name)).append(",");
-                        } else if (field.getType().isAssignableFrom(double.class)) {
-                            sb.append(field.get(name)).append(",");
-                        } else if (field.getType().isAssignableFrom(String.class)) {
-                            sb.append("\"").append(field.get(name)).append("\"").append(",");
-                        } else if (field.getType().isAssignableFrom(boolean.class)) {
-                            sb.append(field.get(name)).append(",");
-                        } else if (field.getType().isAssignableFrom(List.class)) {
-                            sb.append(gson.toJson(field.get(name))).append(",");
-                        } else if (field.getType().isAssignableFrom(Map.class)) {
-                            sb.append(gson.toJson(field.get(name))).append(",");
-                        } else {
-                            sb.append("\"").append("unknown").append("\"").append(",");
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                });
+        for (Field field : fields) {
+            String name = field.getName();
+            field.setAccessible(true);
+            if (showFiledName) sb.append("\"").append(name).append("\"").append(":");
+            else sb.append("\"").append(getFieldName(field)).append("\"").append(":");
+            try {
+                Object value = field.get(name);
+                if (field.getType().isAssignableFrom(int.class)) {
+                    sb.append(value).append(",");
+                } else if (field.getType().isAssignableFrom(long.class)) {
+                    sb.append(value).append(",");
+                } else if (field.getType().isAssignableFrom(double.class)) {
+                    sb.append(value).append(",");
+                } else if (field.getType().isAssignableFrom(String.class)) {
+                    if (value == null) sb.append("null").append(",");
+                    else sb.append("\"").append(value).append("\"").append(",");
+                } else if (field.getType().isAssignableFrom(boolean.class)) {
+                    sb.append(value).append(",");
+                } else if (field.getType().isAssignableFrom(List.class)) {
+                    sb.append(gson.toJson(value)).append(",");
+                } else if (field.getType().isAssignableFrom(Map.class)) {
+                    sb.append(gson.toJson(value)).append(",");
+                } else {
+                    sb.append("\"").append("unknown").append("\"").append(",");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
         sb.deleteCharAt(sb.length() -1);
         return sb.append("}}").toString();
     }

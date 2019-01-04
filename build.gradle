@@ -1,13 +1,14 @@
-import groovy.transform.Field
-
-import java.util.stream.Stream
-
 plugins {
     id 'java'
 }
 
-group 'cn.ca.iie.dolls'
-version '3.2'
+// 生成启动脚本打包
+//apply plugin: 'application'
+//mainClassName = 'zzq.BaiduAsr'
+
+
+group 'zzq.dolls'
+version '4.1'
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 
@@ -29,6 +30,7 @@ dependencies {
     //config
     compile("com.google.code.gson:gson:2.8.5")
     compile("commons-io:commons-io:2.6")
+    compile group: 'org.yaml', name: 'snakeyaml', version: '1.23'
 
     //iie mq
     compile("com.alibaba.rocketmq:rocketmq-client:3.1.8")
@@ -39,7 +41,17 @@ dependencies {
 
     //baidu
     compile("com.baidu.aip:java-sdk:4.1.1")
-    compile fileTree(dir:'libs',include:['*.jar'])
+    compile fileTree(dir:'libs',include:['*win*','*data*'])
+
+
+    compile 'io.javalin:javalin:2.4.0'
+    compile("org.bytedeco:javacv:1.3.3")
+
+
+    compile group: 'org.apache.pulsar', name: 'pulsar-client', version: '2.2.0'
+
+    compile group: 'org.rocksdb', name: 'rocksdbjni', version: '5.17.2'
+
 
 }
 
@@ -48,22 +60,25 @@ tasks.withType(JavaCompile) {
     //options.compilerArgs << "-Xlint:unchecked"
 }
 
-//jar {
-//    manifest {
-//        attributes 'Main-Class': 'cn.ac.iie.dolls.Main'
-//        attributes 'Class-Path': cp()
-//    }
-//}
+jar {
+    //from {
+    //    //添加依懒到打包文件
+    //    configurations.runtime.collect { zipTree(it) }
+    //}
 
-@Field static String libs = "outLibs"
+    manifest {
+        attributes 'Main-Class': 'zzq.BaiduAsr'
+        //attributes "Class-Path": configurations.compile.collect { "lib/${it.name}" }.join(' ')
+    }
+}
 
-task copyJars(type: Copy) {
+task clearJar(type: Delete) {
+    delete 'build/libs/lib'
+}
+
+task copyJar(type: Copy) {
     from configurations.runtime
-    into libs
+    into('build/libs/lib')
 }
 
-static def cp() {
-    File f = new File(libs)
-    return Stream.of(f.list()).map { p -> libs + "/" + p }.toArray().join(' ')
-}
-
+task release(type: Copy, dependsOn: [build, clearJar, copyJar])

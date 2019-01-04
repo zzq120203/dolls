@@ -124,6 +124,10 @@ public class RedisPool {
         }
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
     public static final class Builder {
 
         private String urls = null;

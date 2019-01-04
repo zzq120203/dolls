@@ -64,6 +64,10 @@ public class RocketProducer {
         return this;
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
     public static final class Builder {
         private String group;
         private String nameSrv;

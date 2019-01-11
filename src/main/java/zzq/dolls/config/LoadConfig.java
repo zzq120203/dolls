@@ -112,7 +112,9 @@ public class LoadConfig {
                         field.set(null, gson.fromJson(gson.toJson(value), new TypeToken<Map<String, String>>() {
                         }.getType()));
                     } else {
-                        throw new RuntimeException("unknown data type exception -> " + field.getType());
+                        Class<?> type = field.getType();
+                        Map<String, String> tmp = gson.fromJson(gson.toJson(value), new TypeToken<Map<String, String>>() {}.getType());
+                        loadStringMap(tmp, type);
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -153,7 +155,9 @@ public class LoadConfig {
                         field.set(null, gson.fromJson(value, new TypeToken<Map<String, String>>() {
                         }.getType()));
                     } else {
-                        throw new RuntimeException("unknown data type exception -> " + field.getType());
+                        Class<?> type = field.getType();
+                        Map<String, String> tmp = gson.fromJson(gson.toJson(value), new TypeToken<Map<String, String>>() {}.getType());
+                        loadStringMap(tmp, type);
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -204,7 +208,8 @@ public class LoadConfig {
                 } else if (field.getType().isAssignableFrom(Map.class)) {
                     sb.append(gson.toJson(value)).append(",");
                 } else {
-                    sb.append("\"").append("unknown").append("\"").append(",");
+                    Class<?> type = field.getType();
+                    sb.append(string(type, showFiledName)).append(",");
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -212,5 +217,42 @@ public class LoadConfig {
         }
         sb.deleteCharAt(sb.length() -1);
         return sb.append("}}").toString();
+    }
+
+    private static <T> String string(Class<T> c, boolean showFiledName) {
+        Field[] fields = c.getDeclaredFields();
+        StringBuilder sb = new StringBuilder("{");
+        for (Field field : fields) {
+            String name = field.getName();
+            field.setAccessible(true);
+            if (showFiledName) sb.append("\"").append(name).append("\"").append(":");
+            else sb.append("\"").append(getFieldName(field)).append("\"").append(":");
+            try {
+                Object value = field.get(name);
+                if (field.getType().isAssignableFrom(int.class)) {
+                    sb.append(value).append(",");
+                } else if (field.getType().isAssignableFrom(long.class)) {
+                    sb.append(value).append(",");
+                } else if (field.getType().isAssignableFrom(double.class)) {
+                    sb.append(value).append(",");
+                } else if (field.getType().isAssignableFrom(String.class)) {
+                    if (value == null) sb.append("null").append(",");
+                    else sb.append("\"").append(value).append("\"").append(",");
+                } else if (field.getType().isAssignableFrom(boolean.class)) {
+                    sb.append(value).append(",");
+                } else if (field.getType().isAssignableFrom(List.class)) {
+                    sb.append(gson.toJson(value)).append(",");
+                } else if (field.getType().isAssignableFrom(Map.class)) {
+                    sb.append(gson.toJson(value)).append(",");
+                } else {
+                    Class<?> type = field.getType();
+                    sb.append(string(type, showFiledName)).append(",");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        sb.deleteCharAt(sb.length() -1);
+        return sb.append("}").toString();
     }
 }

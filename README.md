@@ -34,12 +34,16 @@ mq:
 
 redis：
 
-获取连接池（STANDALONE模式）
+获取连接池
     
     RedisPool pool = RedisPool.builder().urls(url).redisMode(RedisMode.STANDALONE).build();
 操作redis
+STANDALONE、SENTINEL模式
     
     pool.jedis(jedis -> jedis.keys("*"));
+CLUSTER模式
+    
+    pool.cluster(jedis -> jedis.keys("*"));
 关闭连接池：
 
     pool.close();

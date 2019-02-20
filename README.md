@@ -22,6 +22,11 @@ mq:
         }
         return true;
     });
+或
+
+    consumer.message(Date::new, data -> {
+        ......
+    });
 启动
     
     consumer.start();

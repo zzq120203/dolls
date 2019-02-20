@@ -35,8 +35,10 @@ mq:
 redis：
 
 获取连接池
+
     RedisPool pool = RedisPool.builder().urls(url).build();
 或
+
     RedisPool pool = RedisPool.builder().urls(url).redisMode(RedisMode.STANDALONE).build();
 操作redis
 

@@ -4,10 +4,13 @@
 
 mq：
 获取连接
+
     IIEClient client = IIEClient.builder().url(MQConfig.url).build();
 创建consumer
+
     IIEConsumer consumer = client.newConsumer().group(MQConfig.group).topic(MQConfig.topic).build();
 获取消息
+    
     consumer.message(record -> {
         try {
             String key = record.getString("g_ch_key");
@@ -21,21 +24,26 @@ mq：
 
 redis：
 获取连接池（STANDALONE模式）
+    
     RedisPool pool = RedisPool.builder().urls(url).redisMode(RedisMode.STANDALONE).build();
 操作redis
+    
     pool.jedis(jedis -> jedis.keys("*"));
 
 
 db:
 获取连接池
+
     JDBCPool pool = JDBCPool.builder().url(url).userName(user).password(passwd).build();
 查询
+
     pool.select("select 1", result -> {
         while (result.next()) {
             result.getString(1);
         }
     });
 更新
+
     pool.update("update ....");
 
 

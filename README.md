@@ -2,7 +2,8 @@
 小工具(iiemq,redis连接池,基于druid的数据库连接池)  
 环境 jdk8+
 
-mq：
+mq:
+
 获取连接
 
     IIEClient client = IIEClient.builder().url(MQConfig.url).build();
@@ -23,6 +24,7 @@ mq：
     });
 
 redis：
+
 获取连接池（STANDALONE模式）
     
     RedisPool pool = RedisPool.builder().urls(url).redisMode(RedisMode.STANDALONE).build();
@@ -32,6 +34,7 @@ redis：
 
 
 db:
+
 获取连接池
 
     JDBCPool pool = JDBCPool.builder().url(url).userName(user).password(passwd).build();

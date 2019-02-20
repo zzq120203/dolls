@@ -38,6 +38,7 @@ redis：
     
     RedisPool pool = RedisPool.builder().urls(url).redisMode(RedisMode.STANDALONE).build();
 操作redis
+
 STANDALONE、SENTINEL模式
     
     pool.jedis(jedis -> jedis.keys("*"));

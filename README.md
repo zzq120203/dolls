@@ -70,6 +70,14 @@ db:
             result.getString(1);
         }
     });
+或
+
+    pool.select("select *  from table where id = ?", (ps, rset) -> {
+        ps.setInt(1, 100);
+        while (result.next()) {
+            result.getString(1);
+        }
+    });
 更新
 
     pool.update("update ....");

@@ -24,7 +24,7 @@ mq:
     });
 或
 
-    consumer.message(Date::new, data -> {
+    consumer.message(Data::new, data -> {
         ......
     });
 启动

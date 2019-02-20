@@ -6,10 +6,10 @@ mq:
 
 获取连接
 
-    IIEClient client = IIEClient.builder().url(MQConfig.url).build();
+    IIEClient client = IIEClient.builder().url(url).build();
 创建consumer
 
-    IIEConsumer consumer = client.newConsumer().group(MQConfig.group).topic(MQConfig.topic).build();
+    IIEConsumer consumer = client.newConsumer().group(group).topic(topic).build();
 获取消息
     
     consumer.message(record -> {

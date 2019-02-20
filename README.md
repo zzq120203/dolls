@@ -72,8 +72,8 @@ db:
     });
 或
 
-    pool.select("select *  from table where id = ?", (ps, rset) -> {
-        ps.setInt(1, 100);
+    pool.select("select *  from table where id = ?", (statement, result) -> {
+        statement.setInt(1, 100);
         while (result.next()) {
             result.getString(1);
         }

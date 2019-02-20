@@ -3,15 +3,15 @@
 
 环境 jdk8+
 
-mq:
+#mq:
 
-获取连接
+##获取连接
 
     IIEClient client = IIEClient.builder().url(url).build();
-创建consumer
+##创建consumer
 
     IIEConsumer consumer = client.newConsumer().group(group).topic(topic).build();
-获取消息
+##获取消息
     
     consumer.message(record -> {
         try {
@@ -31,39 +31,39 @@ mq:
 启动
     
     consumer.start();
-关闭consumer
+##关闭consumer
 
     consumer.stop();
-关闭连接
+##关闭连接
     
     client.close();
 
-redis：
+#redis：
 
-获取连接池
+##获取连接池
 
     RedisPool pool = RedisPool.builder().urls(url).build();
 或
 
     RedisPool pool = RedisPool.builder().urls(url).redisMode(RedisMode.STANDALONE).build();
-操作redis
+##操作redis
 
-STANDALONE、SENTINEL模式
+###STANDALONE、SENTINEL模式
     
     pool.jedis(jedis -> jedis.keys("*"));
-CLUSTER模式
+###CLUSTER模式
     
     pool.cluster(jedis -> jedis.keys("*"));
-关闭连接池：
+##关闭连接池：
 
     pool.close();
 
-db:
+#db:
 
-获取连接池
+##获取连接池
 
     JDBCPool pool = JDBCPool.builder().url(url).userName(user).password(passwd).build();
-查询
+##查询
 
     pool.select("select 1", result -> {
         while (result.next()) {
@@ -78,7 +78,7 @@ db:
             result.getString(1);
         }
     });
-更新
+##更新
 
     pool.update("update ....");
 

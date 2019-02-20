@@ -22,6 +22,15 @@ mq:
         }
         return true;
     });
+启动
+    
+    consumer.start();
+关闭consumer
+
+    consumer.stop();
+关闭连接
+    
+    client.close();
 
 redis：
 
@@ -31,7 +40,9 @@ redis：
 操作redis
     
     pool.jedis(jedis -> jedis.keys("*"));
+关闭连接池：
 
+    pool.close();
 
 db:
 
@@ -50,3 +61,6 @@ db:
     pool.update("update ....");
 
 
+
+--------------------------
+注：接口内部实现了释放连接，无需调用

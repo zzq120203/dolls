@@ -51,7 +51,7 @@ RedisPool pool = RedisPool.builder().urls(url).build();
 ```
 或
 ```
-RedisPool pool = RedisPool.builder().urls(url).redisMode(RedisMode.STANDALONE).build();
+RedisPool pool = RedisPool.builder().urls(url).redisMode(RedisMode.STANDALONE).authToken("zzq120203").build();
 ```
 **操作redis**
 

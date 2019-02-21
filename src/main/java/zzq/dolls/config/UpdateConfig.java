@@ -13,12 +13,14 @@ import static io.javalin.apibuilder.ApiBuilder.path;
 
 public class UpdateConfig {
 
-    private RedisPool rpool;
+    private static final String KEY_HEAD = "config:";
+
+    private RedisPool pool;
 
     private Javalin app;
 
     public UpdateConfig(RedisPool pool, Javalin app) {
-        this.rpool = pool;
+        this.pool = pool;
         this.app = app;
     }
 
@@ -41,8 +43,8 @@ public class UpdateConfig {
 
     private void update(Context context, Field field, String path, String name) throws Exception {
         String value = context.pathParam(path);
-        if (rpool != null) {
-            rpool.jedis(jedis -> jedis.hset("config." + name, path, value));
+        if (pool != null) {
+            pool.jedis(jedis -> jedis.hset(KEY_HEAD + name, path, value));
         }
         field.setAccessible(true);
         if (field.getType().isAssignableFrom(int.class)) {
@@ -80,32 +82,35 @@ public class UpdateConfig {
 
     public <T> void save(Class<T> c) {
         Field[] fields = c.getDeclaredFields();
-        rpool.jedis(jedis -> {
-            for (Field field : fields) {
-                String name = LoadConfig.getFieldName(field);
-                field.setAccessible(true);
-                try {
-                    Object value = field.get(field.getName());
-                    if (field.getType().isAssignableFrom(int.class)) {
-                        jedis.hset("config." + c.getName(), name, value.toString());
-                    } else if (field.getType().isAssignableFrom(long.class)) {
-                        jedis.hset("config." + c.getName(), name, value.toString());
-                    } else if (field.getType().isAssignableFrom(double.class)) {
-                        jedis.hset("config." + c.getName(), name, value.toString());
-                    } else if (field.getType().isAssignableFrom(String.class)) {
-                        if (value == null) jedis.hset("config." + c.getName(), name, "null");
-                        else jedis.hset("config." + c.getName(), name, value.toString());
-                    } else if (field.getType().isAssignableFrom(boolean.class)) {
-                        jedis.hset("config." + c.getName(), name, value.toString());
-                    } else if (field.getType().isAssignableFrom(List.class)) {
-                        jedis.hset("config." + c.getName(), name, LoadConfig.gson.toJson(value));
-                    } else if (field.getType().isAssignableFrom(Map.class)) {
-                        jedis.hset("config." + c.getName(), name, LoadConfig.gson.toJson(value));
-                    } else {
-                        throw new RuntimeException("unknown data type exception -> " + field.getType());
+        pool.jedis(jedis -> {
+            String key = KEY_HEAD + c.getName();
+            if (!jedis.exists(key)) {
+                for (Field field : fields) {
+                    String name = LoadConfig.getFieldName(field);
+                    field.setAccessible(true);
+                    try {
+                        Object value = field.get(field.getName());
+                        if (field.getType().isAssignableFrom(int.class)) {
+                            jedis.hset(key, name, value.toString());
+                        } else if (field.getType().isAssignableFrom(long.class)) {
+                            jedis.hset(key, name, value.toString());
+                        } else if (field.getType().isAssignableFrom(double.class)) {
+                            jedis.hset(key, name, value.toString());
+                        } else if (field.getType().isAssignableFrom(String.class)) {
+                            if (value == null) jedis.hset(key, name, "null");
+                            else jedis.hset(key, name, value.toString());
+                        } else if (field.getType().isAssignableFrom(boolean.class)) {
+                            jedis.hset(key, name, value.toString());
+                        } else if (field.getType().isAssignableFrom(List.class)) {
+                            jedis.hset(key, name, LoadConfig.gson.toJson(value));
+                        } else if (field.getType().isAssignableFrom(Map.class)) {
+                            jedis.hset(key, name, LoadConfig.gson.toJson(value));
+                        } else {
+                            throw new RuntimeException("unknown data type exception -> " + field.getType());
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
                 }
             }
             return null;
@@ -118,7 +123,7 @@ public class UpdateConfig {
 
     public <T> void update(Class<T> c, long millis) throws InterruptedException {
         do {
-            Map<String, String> map = rpool.jedis(jedis -> jedis.hgetAll("config." + c.getName()));
+            Map<String, String> map = pool.jedis(jedis -> jedis.hgetAll(KEY_HEAD + c.getName()));
 
             LoadConfig.loadStringMap(map, c);
             Thread.sleep(millis);

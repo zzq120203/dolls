@@ -89,7 +89,7 @@ public class LoadConfig {
             if (!lcMap.containsKey(name)) {
                 Optional optional = field.getAnnotation(Optional.class);
                 if (optional == null)
-                    throw new RuntimeException(field.getName().toLowerCase() + " uninitialized");
+                    throw new RuntimeException(field.getName() + "(" + name + ") uninitialized");
             } else {
                 Object value = lcMap.get(name);
                 field.setAccessible(true);
@@ -100,6 +100,8 @@ public class LoadConfig {
                         field.set(null, Long.parseLong(value.toString()));
                     } else if (field.getType().isAssignableFrom(double.class)) {
                         field.set(null, Double.parseDouble(value.toString()));
+                    } else if (field.getType().isAssignableFrom(float.class)) {
+                        field.set(null, Float.parseFloat(value.toString()));
                     } else if (field.getType().isAssignableFrom(String.class)) {
                         if (value == null || value.toString().toLowerCase().equals("null")) field.set(null, null);
                         else field.set(null, value.toString());
@@ -113,8 +115,8 @@ public class LoadConfig {
                         }.getType()));
                     } else {
                         Class<?> type = field.getType();
-                        Map<String, String> tmp = gson.fromJson(gson.toJson(value), new TypeToken<Map<String, String>>() {}.getType());
-                        loadStringMap(tmp, type);
+                        Map<String, Object> tmp = gson.fromJson(gson.toJson(value), new TypeToken<Map<String, Object>>() {}.getType());
+                        load(tmp, type);
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -132,7 +134,7 @@ public class LoadConfig {
             if (!lcMap.containsKey(name)) {
                 Optional optional = field.getAnnotation(Optional.class);
                 if (optional == null)
-                    throw new RuntimeException(field.getName().toLowerCase() + " uninitialized");
+                    throw new RuntimeException(field.getName() + "(" + name + ") uninitialized");
             } else {
                 String value = lcMap.get(name);
                 field.setAccessible(true);
@@ -143,6 +145,8 @@ public class LoadConfig {
                         field.set(null, Long.parseLong(value));
                     } else if (field.getType().isAssignableFrom(double.class)) {
                         field.set(null, Double.parseDouble(value));
+                    } else if (field.getType().isAssignableFrom(float.class)) {
+                        field.set(null, Float.parseFloat(value));
                     } else if (field.getType().isAssignableFrom(String.class)) {
                         if (value == null || value.toLowerCase().equals("null")) field.set(null, null);
                         else field.set(null, value);
@@ -160,6 +164,7 @@ public class LoadConfig {
                         loadStringMap(tmp, type);
                     }
                 } catch (Exception e) {
+                    System.out.println(field.getType());
                     e.printStackTrace();
                 }
             }
@@ -198,6 +203,8 @@ public class LoadConfig {
                     sb.append(value).append(",");
                 } else if (field.getType().isAssignableFrom(double.class)) {
                     sb.append(value).append(",");
+                } else if (field.getType().isAssignableFrom(float.class)) {
+                    sb.append(value).append(",");
                 } else if (field.getType().isAssignableFrom(String.class)) {
                     if (value == null) sb.append("null").append(",");
                     else sb.append("\"").append(value).append("\"").append(",");
@@ -234,6 +241,8 @@ public class LoadConfig {
                 } else if (field.getType().isAssignableFrom(long.class)) {
                     sb.append(value).append(",");
                 } else if (field.getType().isAssignableFrom(double.class)) {
+                    sb.append(value).append(",");
+                } else if (field.getType().isAssignableFrom(float.class)) {
                     sb.append(value).append(",");
                 } else if (field.getType().isAssignableFrom(String.class)) {
                     if (value == null) sb.append("null").append(",");

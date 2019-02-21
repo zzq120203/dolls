@@ -8,7 +8,9 @@ import cn.ac.iie.di.datadock.rdata.exchange.client.v1.session.*;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializer;
+import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
+import zzq.dolls.config.From;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
@@ -72,19 +74,20 @@ public class IIEProducer {
         Map map = gson.fromJson(data, Map.class);
         for (Field field : c.getDeclaredFields()) {
             field.setAccessible(true);
-            if (map.containsKey(field.getName())) continue;
-            String value = map.get(field.getName()).toString();
+            String name = IIEClient.getFieldName(field);
+            if (map.containsKey(name)) continue;
+            String value = map.get(name).toString();
             try {
                 if (int.class.isAssignableFrom(field.getType())) {
-                    sender.setInt(field.getName(), Integer.parseInt(value));
+                    sender.setInt(name, Integer.parseInt(value));
                 } else if (long.class.isAssignableFrom(field.getType())) {
-                    sender.setLong(field.getName(), Long.parseLong(value));
+                    sender.setLong(name, Long.parseLong(value));
                 } else if (double.class.isAssignableFrom(field.getType())) {
-                    sender.setDouble(field.getName(), Double.parseDouble(value));
+                    sender.setDouble(name, Double.parseDouble(value));
                 } else if (String.class.isAssignableFrom(field.getType())) {
-                    sender.setString(field.getName(), value);
+                    sender.setString(name, value);
                 } else if (boolean.class.isAssignableFrom(field.getType())) {
-                    sender.setBoolean(field.getName(), Boolean.parseBoolean(value));
+                    sender.setBoolean(name, Boolean.parseBoolean(value));
                 } else if (List.class.isAssignableFrom(field.getType())) {
                     Type generic = field.getGenericType();
                     if(generic == null) throw new RuntimeException("unknown data type exception -> " + field.getType());
@@ -92,15 +95,15 @@ public class IIEProducer {
                         ParameterizedType pt = (ParameterizedType) generic;
                         Class gc = (Class)pt.getActualTypeArguments()[0];
                         if (Integer.class.isAssignableFrom(gc))
-                            sender.setInts(field.getName(), gson.fromJson(value, new TypeToken<ArrayList<Integer>>(){}.getType()));
+                            sender.setInts(name, gson.fromJson(value, new TypeToken<ArrayList<Integer>>(){}.getType()));
                         else if (Long.class.isAssignableFrom(gc)) {
-                            sender.setLongs(field.getName(), gson.fromJson(value, new TypeToken<ArrayList<Long>>(){}.getType()));
+                            sender.setLongs(name, gson.fromJson(value, new TypeToken<ArrayList<Long>>(){}.getType()));
                         } else if (Double.class.isAssignableFrom(gc)) {
-                            sender.setDoubles(field.getName(), gson.fromJson(value, new TypeToken<ArrayList<Double>>(){}.getType()));
+                            sender.setDoubles(name, gson.fromJson(value, new TypeToken<ArrayList<Double>>(){}.getType()));
                         } else if (String.class.isAssignableFrom(gc)) {
-                            sender.setStrings(field.getName(), gson.fromJson(value, new TypeToken<ArrayList<String>>(){}.getType()));
+                            sender.setStrings(name, gson.fromJson(value, new TypeToken<ArrayList<String>>(){}.getType()));
                         } else if (Boolean.class.isAssignableFrom(gc)) {
-                            sender.setBooleans(field.getName(), gson.fromJson(value, new TypeToken<ArrayList<Boolean>>(){}.getType()));
+                            sender.setBooleans(name, gson.fromJson(value, new TypeToken<ArrayList<Boolean>>(){}.getType()));
                         }
                     }
                 } else {
@@ -183,17 +186,18 @@ public class IIEProducer {
             builder = (RESendSessionBuilder) conn.getSendSessionBuilder(topic);
             for (Field field : c.getDeclaredFields()) {
                 field.setAccessible(true);
+                String name = IIEClient.getFieldName(field);
                 try {
                     if (int.class.isAssignableFrom(field.getType())) {
-                        builder.addColumn(field.getName(), REFieldType.Int, true);
+                        builder.addColumn(name, REFieldType.Int, true);
                     } else if (long.class.isAssignableFrom(field.getType())) {
-                        builder.addColumn(field.getName(), REFieldType.Long, true);
+                        builder.addColumn(name, REFieldType.Long, true);
                     } else if (double.class.isAssignableFrom(field.getType())) {
-                        builder.addColumn(field.getName(), REFieldType.Double, true);
+                        builder.addColumn(name, REFieldType.Double, true);
                     } else if (String.class.isAssignableFrom(field.getType())) {
-                        builder.addColumn(field.getName(), REFieldType.String, true);
+                        builder.addColumn(name, REFieldType.String, true);
                     } else if (boolean.class.isAssignableFrom(field.getType())) {
-                        builder.addColumn(field.getName(), REFieldType.Boolean, true);
+                        builder.addColumn(name, REFieldType.Boolean, true);
                     } else if (List.class.isAssignableFrom(field.getType())) {
                         Type generic = field.getGenericType();
                         if(generic == null) throw new RuntimeException("unknown data type exception -> " + field.getType());
@@ -201,15 +205,15 @@ public class IIEProducer {
                             ParameterizedType pt = (ParameterizedType) generic;
                             Class gc = (Class)pt.getActualTypeArguments()[0];
                             if (Integer.class.isAssignableFrom(gc)) {
-                                builder.addColumn(field.getName(), REFieldType.Ints, true);
+                                builder.addColumn(name, REFieldType.Ints, true);
                             } else if (Long.class.isAssignableFrom(gc)) {
-                                builder.addColumn(field.getName(), REFieldType.Longs, true);
+                                builder.addColumn(name, REFieldType.Longs, true);
                             } else if (Double.class.isAssignableFrom(gc)) {
-                                builder.addColumn(field.getName(), REFieldType.Doubles, true);
+                                builder.addColumn(name, REFieldType.Doubles, true);
                             } else if (String.class.isAssignableFrom(gc)) {
-                                builder.addColumn(field.getName(), REFieldType.Strings, true);
+                                builder.addColumn(name, REFieldType.Strings, true);
                             } else if (Boolean.class.isAssignableFrom(gc)) {
-                                builder.addColumn(field.getName(), REFieldType.Booleans, true);
+                                builder.addColumn(name, REFieldType.Booleans, true);
                             }
                         }
                     } else {

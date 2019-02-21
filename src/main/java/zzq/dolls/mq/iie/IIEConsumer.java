@@ -9,6 +9,8 @@ import cn.ac.iie.di.datadock.rdata.exchange.client.v1.connection.REConnection;
 import cn.ac.iie.di.datadock.rdata.exchange.client.v1.session.FormattedHandler;
 import cn.ac.iie.di.datadock.rdata.exchange.client.v1.session.REReceiveSession;
 import cn.ac.iie.di.datadock.rdata.exchange.client.v1.session.REReceiveSessionBuilder;
+import com.google.gson.annotations.SerializedName;
+import zzq.dolls.config.From;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
@@ -27,20 +29,22 @@ public class IIEConsumer {
     private String topic;
     private int threadNum;
     private ConsumePosition consumeFromWhere;
+    private long consumeTimestamp;
 
     private REReceiveSession receiver;
 
     private REReceiveSessionBuilder builder;
 
     private IIEConsumer(Builder builder) throws REConnectionException {
-        this(builder.conn, builder.group, builder.topic, builder.threadNum, builder.consumeFromWhere);
+        this(builder.conn, builder.group, builder.topic, builder.threadNum, builder.consumeFromWhere, builder.consumeTimestamp);
     }
 
-    private IIEConsumer(REConnection conn, String group, String topic, int threadNum, ConsumePosition consumeFromWhere) throws REConnectionException {
+    private IIEConsumer(REConnection conn, String group, String topic, int threadNum, ConsumePosition consumeFromWhere, long consumeTimestamp) throws REConnectionException {
         this.group = group;
         this.topic = topic;
         this.threadNum = threadNum;
         this.consumeFromWhere = consumeFromWhere;
+        this.consumeTimestamp = consumeTimestamp;
         init(conn);
     }
 
@@ -48,6 +52,7 @@ public class IIEConsumer {
         builder = (REReceiveSessionBuilder) conn.getReceiveSessionBuilder(topic);
         builder.setGroupName(group);
         builder.setConsumPosition(consumeFromWhere);
+        if (consumeFromWhere == ConsumePosition.CONSUME_FROM_TIMESTAMP) builder.setConsumeTimestamp(consumeTimestamp);
         builder.setConsumeThreadNum(threadNum);
         builder.setFailureHandler(new REAbstractReceiveMessageHandler<FailureMessage>() {
             @Override
@@ -69,43 +74,44 @@ public class IIEConsumer {
                     try {
                         for (Field field : d.getClass().getDeclaredFields()) {
                             field.setAccessible(true);
-                                if (int.class.isAssignableFrom(field.getType())) {
-                                    field.set(d, rec.getInt(field.getName()));
-                                } else if (long.class.isAssignableFrom(field.getType())) {
-                                    field.set(d, rec.getLong(field.getName()));
-                                } else if (double.class.isAssignableFrom(field.getType())) {
-                                    field.set(d, rec.getDouble(field.getName()));
-                                } else if (String.class.isAssignableFrom(field.getType())) {
-                                    field.set(d, rec.getString(field.getName()));
-                                } else if (boolean.class.isAssignableFrom(field.getType())) {
-                                    field.set(d, rec.getBoolean(field.getName()));
-                                } else if (List.class.isAssignableFrom(field.getType())) {
-                                    Type generic = field.getGenericType();
-                                    if (generic == null)
-                                        throw new RuntimeException("unknown data type exception -> " + field.getType());
-                                    if (generic instanceof ParameterizedType) {
-                                        ParameterizedType pt = (ParameterizedType) generic;
-                                        Class gc = (Class) pt.getActualTypeArguments()[0];
-                                        if (Integer.class.isAssignableFrom(gc)) {
-                                            field.set(d, rec.getInts(field.getName()));
-                                        } else if (Long.class.isAssignableFrom(gc)) {
-                                            field.set(d, rec.getLongs(field.getName()));
-                                        } else if (Double.class.isAssignableFrom(gc)) {
-                                            field.set(d, rec.getDoubles(field.getName()));
-                                        } else if (String.class.isAssignableFrom(gc)) {
-                                            field.set(d, rec.getStrings(field.getName()));
-                                        } else if (Boolean.class.isAssignableFrom(gc)) {
-                                            field.set(d, rec.getBooleans(field.getName()));
-                                        }
-                                    }
-                                } else {
+                            String name = IIEClient.getFieldName(field);
+                            if (int.class.isAssignableFrom(field.getType())) {
+                                field.set(d, rec.getInt(name));
+                            } else if (long.class.isAssignableFrom(field.getType())) {
+                                field.set(d, rec.getLong(name));
+                            } else if (double.class.isAssignableFrom(field.getType())) {
+                                field.set(d, rec.getDouble(name));
+                            } else if (String.class.isAssignableFrom(field.getType())) {
+                                field.set(d, rec.getString(name));
+                            } else if (boolean.class.isAssignableFrom(field.getType())) {
+                                field.set(d, rec.getBoolean(name));
+                            } else if (List.class.isAssignableFrom(field.getType())) {
+                                Type generic = field.getGenericType();
+                                if (generic == null)
                                     throw new RuntimeException("unknown data type exception -> " + field.getType());
+                                if (generic instanceof ParameterizedType) {
+                                    ParameterizedType pt = (ParameterizedType) generic;
+                                    Class gc = (Class) pt.getActualTypeArguments()[0];
+                                    if (Integer.class.isAssignableFrom(gc)) {
+                                        field.set(d, rec.getInts(name));
+                                    } else if (Long.class.isAssignableFrom(gc)) {
+                                        field.set(d, rec.getLongs(name));
+                                    } else if (Double.class.isAssignableFrom(gc)) {
+                                        field.set(d, rec.getDoubles(name));
+                                    } else if (String.class.isAssignableFrom(gc)) {
+                                        field.set(d, rec.getStrings(name));
+                                    } else if (Boolean.class.isAssignableFrom(gc)) {
+                                        field.set(d, rec.getBooleans(name));
+                                    }
                                 }
+                            } else {
+                                throw new RuntimeException("unknown data type exception -> " + field.getType());
                             }
-                            fun.apply(d);
-                        } catch (Exception e) {
-                            e.printStackTrace();
                         }
+                        fun.apply(d);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
                 return true;
             }
@@ -145,6 +151,7 @@ public class IIEConsumer {
         private int threadNum = 1;
 
         private ConsumePosition consumeFromWhere = ConsumePosition.CONSUME_FROM_FIRST_OFFSET;
+        private long consumeTimestamp = 0L;
 
         private REConnection conn;
 
@@ -173,6 +180,11 @@ public class IIEConsumer {
 
         public Builder consumeFromWhere(ConsumePosition consumeFromWhere) {
             this.consumeFromWhere = consumeFromWhere;
+            return this;
+        }
+
+        public Builder consumeTimestamp(long consumeTimestamp) {
+            this.consumeTimestamp = consumeTimestamp;
             return this;
         }
 

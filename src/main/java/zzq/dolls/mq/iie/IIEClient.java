@@ -2,6 +2,10 @@ package zzq.dolls.mq.iie;
 
 import cn.ac.iie.di.datadock.rdata.exchange.client.exception.REConnectionException;
 import cn.ac.iie.di.datadock.rdata.exchange.client.v1.connection.REConnection;
+import com.google.gson.annotations.SerializedName;
+import zzq.dolls.config.From;
+
+import java.lang.reflect.Field;
 
 public class IIEClient {
 
@@ -38,5 +42,17 @@ public class IIEClient {
         public IIEClient build() {
             return new IIEClient(this);
         }
+    }
+
+    static String getFieldName(Field field) {
+        zzq.dolls.config.From from = field.getAnnotation(From.class);
+        if (from != null) {
+            return from.value().toLowerCase();
+        }
+        SerializedName serializedName = field.getAnnotation(SerializedName.class);
+        if (serializedName != null) {
+            return serializedName.value().toLowerCase();
+        }
+        return field.getName().toLowerCase();
     }
 }

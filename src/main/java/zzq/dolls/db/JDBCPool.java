@@ -2,6 +2,7 @@ package zzq.dolls.db;
 
 import com.alibaba.druid.pool.DruidDataSourceFactory;
 import zzq.dolls.function.BiFunctionThrows;
+import zzq.dolls.function.ConsumerThrows;
 import zzq.dolls.function.FunctionThrows;
 
 import javax.sql.DataSource;
@@ -229,12 +230,27 @@ public class JDBCPool {
         }
     }
 
-    public <T> T select(String sql, BiFunctionThrows<PreparedStatement, ResultSet, T, SQLException> fun) throws SQLException {
+    public <T> T select(String sql, Map<Integer, Object> arg, BiFunctionThrows<PreparedStatement, ResultSet, T, SQLException> fun) throws SQLException {
         try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql);
-             ResultSet resultSet = statement.executeQuery(sql)
+             PreparedStatement statement = connection.prepareStatement(sql)
         ) {
-            return fun.apply(statement, resultSet);
+            for (Map.Entry<Integer, Object> entry : arg.entrySet()) {
+                statement.setObject(entry.getKey(), entry.getValue());
+            }
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return fun.apply(statement, resultSet);
+            }
+        }
+    }
+
+    public <T> T select(String sql, ConsumerThrows<PreparedStatement, SQLException> ps, FunctionThrows<ResultSet, T, SQLException> fun) throws SQLException {
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)
+        ) {
+            ps.apply(statement);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return fun.apply(resultSet);
+            }
         }
     }
 
@@ -256,7 +272,8 @@ public class JDBCPool {
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)
         ) {
-            return fun.apply(statement);
+            fun.apply(statement);
+            return statement.executeUpdate();
         }
     }
 

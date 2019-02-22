@@ -83,7 +83,10 @@ public class LoadConfig {
     public static <T> void load(Map<String, Object> map, Class<T> c) {
         Field[] fields = c.getDeclaredFields();
         Map<String, Object> lcMap = new HashMap<>();
-        map.forEach((k, v) -> lcMap.put(k.toLowerCase(), v));
+        map.forEach((k, v) -> {
+            lcMap.put(k.toLowerCase(), v);
+            System.out.println(v);
+        });
         for (Field field : fields) {
             String name = getFieldName(field);
             if (!lcMap.containsKey(name)) {
@@ -103,8 +106,15 @@ public class LoadConfig {
                     } else if (field.getType().isAssignableFrom(float.class)) {
                         field.set(null, Float.parseFloat(value.toString()));
                     } else if (field.getType().isAssignableFrom(String.class)) {
-                        if (value == null || value.toString().toLowerCase().equals("null")) field.set(null, null);
-                        else field.set(null, value.toString());
+                        if (value == null || value.toString().toLowerCase().equals("null") || value.toString().toLowerCase().equals("\"null\"")) {
+                            field.set(null, null);
+                        } else {
+                            String tmp = value.toString();
+                            if (tmp.startsWith("\"") && tmp.endsWith("\"")) {
+                                value = tmp.substring(1, tmp.length() - 1);
+                            }
+                            field.set(null, value);
+                        }
                     } else if (field.getType().isAssignableFrom(boolean.class)) {
                         field.set(null, Boolean.parseBoolean(value.toString()));
                     } else if (field.getType().isAssignableFrom(List.class)) {
@@ -115,6 +125,7 @@ public class LoadConfig {
                         }.getType()));
                     } else {
                         Class<?> type = field.getType();
+                        //System.out.println(gson.toJson(value));
                         Map<String, Object> tmp = gson.fromJson(gson.toJson(value), new TypeToken<Map<String, Object>>() {}.getType());
                         load(tmp, type);
                     }
@@ -148,8 +159,16 @@ public class LoadConfig {
                     } else if (field.getType().isAssignableFrom(float.class)) {
                         field.set(null, Float.parseFloat(value));
                     } else if (field.getType().isAssignableFrom(String.class)) {
-                        if (value == null || value.toLowerCase().equals("null")) field.set(null, null);
-                        else field.set(null, value);
+                        if (value == null || value.toLowerCase().equals("null") || value.toLowerCase().equals("\"null\"")) {
+                            field.set(null, null);
+                        }
+                        else {
+                            String tmp = value;
+                            if (tmp.startsWith("\"") && tmp.endsWith("\"")) {
+                                value = tmp.substring(1, tmp.length() - 1);
+                            }
+                            field.set(null, value);
+                        }
                     } else if (field.getType().isAssignableFrom(boolean.class)) {
                         field.set(null, Boolean.parseBoolean(value));
                     } else if (field.getType().isAssignableFrom(List.class)) {

@@ -5,6 +5,7 @@ import redis.clients.jedis.*;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -93,6 +94,20 @@ public class RedisPool {
     }
 
     /**
+     * set redisMode -> RedisMode.STANDALONE or RedisMode.SENTINEL
+     * @param r redis接口
+     */
+    public void jedis(Consumer<Jedis> r) {
+        if (redisMode != RedisMode.STANDALONE && redisMode != RedisMode.SENTINEL)
+            throw new IllegalThreadStateException("redis mode is not standalone or sentinel");
+        try (Jedis jedis = getResource()) {
+            if (jedis != null) {
+                r.accept(jedis);
+            }
+        }
+    }
+
+    /**
      * set redisMode -> RedisMode.CLUSTER
      * @param r cluster接口
      * @param <T> 返回值类型
@@ -102,6 +117,16 @@ public class RedisPool {
         if (redisMode != RedisMode.CLUSTER)
             throw new IllegalThreadStateException("redis mode is not cluster");
         return r.apply(cluster);
+    }
+
+    /**
+     * set redisMode -> RedisMode.CLUSTER
+     * @param r cluster接口
+     */
+    public void cluster(Consumer<JedisCluster> r) {
+        if (redisMode != RedisMode.CLUSTER)
+            throw new IllegalThreadStateException("redis mode is not cluster");
+        r.accept(cluster);
     }
 
     public void close() throws IOException {

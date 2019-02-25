@@ -82,12 +82,15 @@ pool.select("select 1", result -> {
 ```
 或
 ```
-pool.select("select *  from table where id = ?", (statement, result) -> {
-    statement.setInt(1, 100);
-    while (result.next()) {
-        result.getString(1);
+pool.select("select *  from table where id = ?", statement -> {
+        statement.setInt(1, 1);
+    }, result -> {
+        statement.setInt(1, 100);
+        while (result.next()) {
+            result.getString(1);
+        }
     }
-});
+);
 ```
 **更新**
 ```

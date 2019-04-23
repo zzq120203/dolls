@@ -268,7 +268,7 @@ public class JDBCPool {
         }
     }
 
-    public int update(String sql, FunctionThrows<PreparedStatement, Integer, SQLException> fun) throws SQLException {
+    public int update(String sql, ConsumerThrows<PreparedStatement, SQLException> fun) throws SQLException {
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)
         ) {
@@ -287,7 +287,7 @@ public class JDBCPool {
         return update(sql);
     }
 
-    public int insert(String sql, FunctionThrows<PreparedStatement, Integer, SQLException> fun) throws SQLException {
+    public int insert(String sql, ConsumerThrows<PreparedStatement, SQLException> fun) throws SQLException {
         return update(sql, fun);
     }
 
@@ -301,7 +301,7 @@ public class JDBCPool {
         return update(sql);
     }
 
-    public int delete(String sql, FunctionThrows<PreparedStatement, Integer, SQLException> fun) throws SQLException {
+    public int delete(String sql, ConsumerThrows<PreparedStatement, SQLException> fun) throws SQLException {
         return update(sql, fun);
     }
 

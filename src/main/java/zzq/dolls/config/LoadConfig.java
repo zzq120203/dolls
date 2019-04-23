@@ -27,7 +27,7 @@ public class LoadConfig {
     }.getType(), (JsonDeserializer<Map<String, Object>>) (json, typeOfT, context) -> {
         Map<String, Object> map = json.getAsJsonObject().entrySet().stream().collect(Collectors.toMap(Entry::getKey, Entry::getValue));
         return map;
-    }).create();
+    }).serializeNulls().create();
 
 
     public static <T> void load(File file, Class<T> c, FileType type) throws IOException {
@@ -83,16 +83,13 @@ public class LoadConfig {
     public static <T> void load(Map<String, Object> map, Class<T> c) {
         Field[] fields = c.getDeclaredFields();
         Map<String, Object> lcMap = new HashMap<>();
-        map.forEach((k, v) -> {
-            lcMap.put(k.toLowerCase(), v);
-            System.out.println(v);
-        });
+        map.forEach((k, v) -> lcMap.put(k.toLowerCase(), v));
         for (Field field : fields) {
             String name = getFieldName(field);
             if (!lcMap.containsKey(name)) {
                 Optional optional = field.getAnnotation(Optional.class);
                 if (optional == null)
-                    throw new RuntimeException(field.getName() + "(" + name + ") uninitialized");
+                    throw new RuntimeException(c.getName() + " " + field.getName() + "(" + name + ") uninitialized");
             } else {
                 Object value = lcMap.get(name);
                 field.setAccessible(true);
@@ -125,7 +122,6 @@ public class LoadConfig {
                         }.getType()));
                     } else {
                         Class<?> type = field.getType();
-                        //System.out.println(gson.toJson(value));
                         Map<String, Object> tmp = gson.fromJson(gson.toJson(value), new TypeToken<Map<String, Object>>() {}.getType());
                         load(tmp, type);
                     }
@@ -145,7 +141,7 @@ public class LoadConfig {
             if (!lcMap.containsKey(name)) {
                 Optional optional = field.getAnnotation(Optional.class);
                 if (optional == null)
-                    throw new RuntimeException(field.getName() + "(" + name + ") uninitialized");
+                    throw new RuntimeException(c.getName() + " " + field.getName() + "(" + name + ") uninitialized");
             } else {
                 String value = lcMap.get(name);
                 field.setAccessible(true);

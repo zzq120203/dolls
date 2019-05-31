@@ -30,6 +30,19 @@ public class LoadConfig {
     }).serializeNulls().create();
 
 
+    public static <T> void load(Class<T> c) throws IOException {
+        final From from = c.getAnnotation(From.class);
+        if (from == null) {
+            throw new IOException("adding annotations @From(value=\"config path\")");
+        }
+        final String value = from.value();
+        if (value.equals("")) {
+            throw new IOException("config file path is null");
+        }
+        final FileType type = from.fileType();
+        load(new File(value), c, type);
+    }
+
     public static <T> void load(File file, Class<T> c, FileType type) throws IOException {
         switch (type) {
             case JSON: {

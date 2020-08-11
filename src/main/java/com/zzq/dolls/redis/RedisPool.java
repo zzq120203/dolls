@@ -1,11 +1,10 @@
-package zzq.dolls.redis;
+package com.zzq.dolls.redis;
 
 import redis.clients.jedis.*;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 

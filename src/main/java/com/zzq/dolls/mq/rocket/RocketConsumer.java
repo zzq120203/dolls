@@ -1,4 +1,4 @@
-package zzq.dolls.mq.rocket;
+package com.zzq.dolls.mq.rocket;
 
 import org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;
 import org.apache.rocketmq.client.consumer.listener.ConsumeConcurrentlyContext;

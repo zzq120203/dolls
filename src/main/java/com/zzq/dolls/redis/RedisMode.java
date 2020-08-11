@@ -1,4 +1,4 @@
-package zzq.dolls.redis;
+package com.zzq.dolls.redis;
 
 /**
  * redis服务模式

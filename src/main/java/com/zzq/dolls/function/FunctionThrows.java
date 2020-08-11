@@ -1,4 +1,4 @@
-package zzq.dolls.function;
+package com.zzq.dolls.function;
 
 
 @FunctionalInterface

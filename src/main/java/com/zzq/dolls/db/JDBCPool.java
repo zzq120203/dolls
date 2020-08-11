@@ -1,9 +1,9 @@
-package zzq.dolls.db;
+package com.zzq.dolls.db;
 
 import com.alibaba.druid.pool.DruidDataSourceFactory;
-import zzq.dolls.function.BiFunctionThrows;
-import zzq.dolls.function.ConsumerThrows;
-import zzq.dolls.function.FunctionThrows;
+import com.zzq.dolls.function.BiFunctionThrows;
+import com.zzq.dolls.function.ConsumerThrows;
+import com.zzq.dolls.function.FunctionThrows;
 
 import javax.sql.DataSource;
 import java.sql.*;

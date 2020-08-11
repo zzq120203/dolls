@@ -1,4 +1,4 @@
-package zzq.dolls.mq.rocket;
+package com.zzq.dolls.mq.rocket;
 
 import org.apache.rocketmq.client.exception.MQBrokerException;
 import org.apache.rocketmq.client.exception.MQClientException;

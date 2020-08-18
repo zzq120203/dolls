@@ -36,6 +36,7 @@ public class JDBCPool {
     private void initConfig() {
         this.config = new HashMap<>();
         this.config.put("url", "jdbc:mysql://localhost:3306/mydb?useSSL=false");
+        this.config.put("driverClassName", null);
         this.config.put("username", "zzq");
         this.config.put("password", "zzq");
         this.config.put("filters", "stat");
@@ -75,6 +76,11 @@ public class JDBCPool {
 
         public JDBCPool build() {
             return new JDBCPool(this);
+        }
+
+        public Builder driver(String driver) {
+            config.put("driverClassName", driver);
+            return this;
         }
 
         public Builder url(String url) {

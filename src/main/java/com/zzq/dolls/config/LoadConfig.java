@@ -1,44 +1,53 @@
 package com.zzq.dolls.config;
 
-import java.nio.charset.*;
-import org.apache.commons.io.*;
-import java.io.*;
-import java.util.stream.*;
-import org.yaml.snakeyaml.*;
-import java.util.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
-import com.alibaba.fastjson.*;
-import java.lang.reflect.*;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.zzq.dolls.config.load.YamlLoad;
 
-public class LoadConfig
-{
-    public static <T> void load(final Class<T> c) throws IOException {
-        final From from = c.getAnnotation(From.class);
+import org.apache.commons.io.FileUtils;
+
+public class LoadConfig {
+    public static <T> void load(Class<T> c) throws IOException {
+        From from = c.getAnnotation(From.class);
         if (from == null) {
             throw new IOException("adding annotations @From(value=\"config path\")");
         }
-        final String name = from.name();
-        final String[] names = from.alternateNames();
+        String name = from.name();
+        String[] names = from.alternateNames();
         if (name.equals("") && names.length == 0) {
             throw new IOException("config file path is null");
         }
-        final FileType type = from.fileType();
+        FileType type = from.fileType();
         for (int i = names.length - 1; i >= 0; --i) {
-            final File file = new File(names[i]);
+            File file = new File(names[i]);
             if (file.exists()) {
                 load(new File(names[i]), c, type);
             }
         }
         if (!name.equals("")) {
-            final File file2 = new File(name);
+            File file2 = new File(name);
             if (file2.exists()) {
                 load(new File(name), c, type);
             }
         }
     }
-    
+
     public static <T> void load(File file, Class<T> c, FileType type) throws IOException {
+        if (!file.exists()) {
+            throw new IOException("config file(" + file.getPath() + ") is not exist");
+        }
         switch (type) {
             case JSON: {
                 String json = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
@@ -66,11 +75,9 @@ public class LoadConfig
                 break;
             }
             case YAML: {
-                try (FileInputStream stream = new FileInputStream(file)) {
-                    Yaml yaml = new Yaml();
-                    Map<String, Object> map = yaml.load(stream);
-                    load(map, c);
-                }
+                YamlLoad yaml = new YamlLoad();
+                Map<String, Object> map = yaml.LoadFile(file);
+                load(map, c);
                 break;
             }
             case HOCON: {
@@ -81,220 +88,203 @@ public class LoadConfig
             }
         }
     }
-    
-    public static <T> void load(final String json, final Class<T> c) {
-        load((Map<String, Object>)JSONObject.parseObject(json), c);
+
+    public static <T> void load(String json, Class<T> c) {
+        load((Map<String, Object>) JSONObject.parseObject(json), c);
     }
-    
-    public static <T> void load(final Map<String, Object> map, final Class<T> c) {
-        final Field[] fields = c.getDeclaredFields();
-        final Map<String, Object> lcMap = new HashMap<String, Object>();
+
+    public static <T> void load(Map<String, Object> map, Class<T> c) {
+        Field[] fields = c.getDeclaredFields();
+        Map<String, Object> lcMap = new HashMap<String, Object>();
         map.forEach((k, v) -> lcMap.put(k.toLowerCase(), v));
-        for (final Field field : fields) {
+        for (Field field : fields) {
             Object value = null;
-            final From from = field.getAnnotation(From.class);
-            Label_0666: {
-                if (from != null) {
-                    final String name = from.name().toLowerCase();
-                    final String[] names = from.alternateNames();
-                    boolean exist = false;
-                    for (int i = names.length - 1; i >= 0; --i) {
-                        if (lcMap.containsKey(names[i])) {
-                            value = lcMap.get(names[i]);
-                            exist = true;
-                        }
-                    }
+            From from = field.getAnnotation(From.class);
+            if (from != null) {
+                String[] names = from.alternateNames();
+                boolean exist = false;
+                for (int i = names.length - 1; i >= 0; --i) {
+                    String name = names[i].toLowerCase();
                     if (lcMap.containsKey(name)) {
                         value = lcMap.get(name);
                         exist = true;
                     }
-                    if (!exist) {
-                        final boolean optional = from.must();
-                        if (optional) {
-                            throw new RuntimeException(c.getName() + " " + field.getName() + "(" + name + ") uninitialized");
-                        }
-                        break Label_0666;
-                    }
                 }
-                else {
-                    final String name = field.getName().toLowerCase();
+                String name = from.name().toLowerCase();
+                if (name.isEmpty()) {
+                    name = field.getName().toLowerCase();
+                }
+                if (lcMap.containsKey(name)) {
                     value = lcMap.get(name);
+                    exist = true;
                 }
-                field.setAccessible(true);
-                try {
-                    if (field.getType().isAssignableFrom(Integer.TYPE)) {
-                        field.setInt(null, Integer.parseInt(value.toString()));
+                if (!exist) {
+                    boolean must = from.must();
+                    if (must) {
+                        throw new RuntimeException(
+                                c.getName() + " " + field.getName() + "(" + name + ") uninitialized");
                     }
-                    else if (field.getType().isAssignableFrom(Long.TYPE)) {
-                        field.set(null, Long.parseLong(value.toString()));
-                    }
-                    else if (field.getType().isAssignableFrom(Double.TYPE)) {
-                        field.set(null, Double.parseDouble(value.toString()));
-                    }
-                    else if (field.getType().isAssignableFrom(Float.TYPE)) {
-                        field.set(null, Float.parseFloat(value.toString()));
-                    }
-                    else if (field.getType().isAssignableFrom(String.class)) {
-                        if (value == null || value.toString().toLowerCase().equals("null") || value.toString().toLowerCase().equals("\"null\"")) {
-                            field.set(null, null);
+                    continue;
+                }
+            } else {
+                String name = field.getName().toLowerCase();
+                value = lcMap.get(name);
+            }
+            field.setAccessible(true);
+            try {
+                if (field.getType().isAssignableFrom(Integer.TYPE)) {
+                    field.setInt(null, Integer.parseInt(value.toString()));
+                } else if (field.getType().isAssignableFrom(Long.TYPE)) {
+                    field.set(null, Long.parseLong(value.toString()));
+                } else if (field.getType().isAssignableFrom(Double.TYPE)) {
+                    field.set(null, Double.parseDouble(value.toString()));
+                } else if (field.getType().isAssignableFrom(Float.TYPE)) {
+                    field.set(null, Float.parseFloat(value.toString()));
+                } else if (field.getType().isAssignableFrom(String.class)) {
+                    if (value == null || value.toString().toLowerCase().equals("null")
+                            || value.toString().toLowerCase().equals("\"null\"")) {
+                        field.set(null, null);
+                    } else {
+                        String tmp = value.toString();
+                        if (tmp.startsWith("\"") && tmp.endsWith("\"")) {
+                            value = tmp.substring(1, tmp.length() - 1);
                         }
-                        else {
-                            final String tmp = value.toString();
-                            if (tmp.startsWith("\"") && tmp.endsWith("\"")) {
-                                value = tmp.substring(1, tmp.length() - 1);
-                            }
-                            field.set(null, value.toString());
-                        }
+                        field.set(null, value.toString());
                     }
-                    else if (field.getType().isAssignableFrom(Boolean.TYPE)) {
-                        field.set(null, Boolean.parseBoolean(value.toString()));
-                    }
-                    else if (field.getType().isAssignableFrom(List.class)) {
-                        final Class<?> clazz = from.subClass();
-                        field.set(null, JSON.parseArray(JSON.toJSONString(value), clazz));
-                    }
-                    else if (field.getType().isAssignableFrom(Map.class)) {
-                        final Map<String, Object> tmp2 = (Map<String, Object>)JSONObject.parseObject(JSON.toJSONString(value));
-                        field.set(null, tmp2);
-                    }
-                    else {
-                        final Class<?> type = field.getType();
-                        final Map<String, Object> tmp3 = (Map<String, Object>)JSONObject.parseObject(JSON.toJSONString(value));
-                        load(tmp3, type);
-                    }
+                } else if (field.getType().isAssignableFrom(Boolean.TYPE)) {
+                    field.set(null, Boolean.parseBoolean(value.toString()));
+                } else if (field.getType().isAssignableFrom(List.class)) {
+                    Class<?> clazz = from.subClass();
+                    field.set(null, JSON.parseArray(JSON.toJSONString(value), clazz));
+                } else if (field.getType().isAssignableFrom(Map.class)) {
+                    Map<String, Object> tmp2 = (Map<String, Object>) JSONObject.parseObject(JSON.toJSONString(value));
+                    field.set(null, tmp2);
+                } else {
+                    Class<?> type = field.getType();
+                    Map<String, Object> tmp3 = (Map<String, Object>) JSONObject.parseObject(JSON.toJSONString(value));
+                    load(tmp3, type);
                 }
-                catch (Exception e) {
-                    e.printStackTrace();
-                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }
-    
-    public static <T> String toString(final Class<T> c) {
-        return toString(c, false);
+
+    public static <T> String toString(Class<T> c) {
+        return toString(c, true);
     }
-    
-    public static <T> String toString(final Class<T> c, final boolean showFiledName) {
-        final Field[] fields = c.getDeclaredFields();
-        final StringBuilder sb = new StringBuilder("{\"" + c.getName() + "\":{");
-        for (final Field field : fields) {
-            final String name = field.getName();
+
+    public static <T> String toString(Class<T> c, boolean showFiledName) {
+        Field[] fields = c.getDeclaredFields();
+        StringBuilder sb = new StringBuilder("{\"" + c.getName() + "\":{");
+        for (Field field : fields) {
+            String name = field.getName();
             field.setAccessible(true);
             if (showFiledName) {
                 sb.append("\"").append(name).append("\"").append(":");
-            }
-            else {
-                final From from = field.getAnnotation(From.class);
-                String fname;
+            } else {
+                From from = field.getAnnotation(From.class);
+                String fname = null;
                 if (from != null) {
                     fname = from.name().toLowerCase();
-                }
-                else {
+                    if (fname.isEmpty()) {
+                        String[] names = from.alternateNames();
+                        if (names.length > 0) {
+                            fname = names[1];
+                        }
+                    }
+                } 
+                if (fname == null) {
                     fname = field.getName().toLowerCase();
                 }
                 sb.append("\"").append(fname).append("\"").append(":");
             }
             try {
-                final Object value = field.get(name);
+                Object value = field.get(name);
                 if (field.getType().isAssignableFrom(Integer.TYPE)) {
                     sb.append(value).append(",");
-                }
-                else if (field.getType().isAssignableFrom(Long.TYPE)) {
+                } else if (field.getType().isAssignableFrom(Long.TYPE)) {
                     sb.append(value).append(",");
-                }
-                else if (field.getType().isAssignableFrom(Double.TYPE)) {
+                } else if (field.getType().isAssignableFrom(Double.TYPE)) {
                     sb.append(value).append(",");
-                }
-                else if (field.getType().isAssignableFrom(Float.TYPE)) {
+                } else if (field.getType().isAssignableFrom(Float.TYPE)) {
                     sb.append(value).append(",");
-                }
-                else if (field.getType().isAssignableFrom(String.class)) {
+                } else if (field.getType().isAssignableFrom(String.class)) {
                     if (value == null) {
                         sb.append("null").append(",");
-                    }
-                    else {
+                    } else {
                         sb.append("\"").append(value).append("\"").append(",");
                     }
-                }
-                else if (field.getType().isAssignableFrom(Boolean.TYPE)) {
+                } else if (field.getType().isAssignableFrom(Boolean.TYPE)) {
                     sb.append(value).append(",");
-                }
-                else if (field.getType().isAssignableFrom(List.class)) {
+                } else if (field.getType().isAssignableFrom(List.class)) {
                     sb.append(JSON.toJSONString(value)).append(",");
-                }
-                else if (field.getType().isAssignableFrom(Map.class)) {
+                } else if (field.getType().isAssignableFrom(Map.class)) {
                     sb.append(JSON.toJSONString(value)).append(",");
-                }
-                else {
+                } else {
                     final Class<?> type = field.getType();
                     sb.append(string(type, showFiledName)).append(",");
                 }
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
         sb.deleteCharAt(sb.length() - 1);
         return sb.append("}}").toString();
     }
-    
-    private static <T> String string(final Class<T> c, final boolean showFiledName) {
-        final Field[] fields = c.getDeclaredFields();
-        final StringBuilder sb = new StringBuilder("{");
-        for (final Field field : fields) {
-            final String name = field.getName();
+
+    private static <T> String string(Class<T> c, boolean showFiledName) {
+        Field[] fields = c.getDeclaredFields();
+        StringBuilder sb = new StringBuilder("{");
+        for (Field field : fields) {
+            String name = field.getName();
             field.setAccessible(true);
             if (showFiledName) {
                 sb.append("\"").append(name).append("\"").append(":");
-            }
-            else {
-                final From from = field.getAnnotation(From.class);
-                String fname;
+            } else {
+                From from = field.getAnnotation(From.class);
+                String fname = null;
                 if (from != null) {
                     fname = from.name().toLowerCase();
-                }
-                else {
+                    if (fname.isEmpty()) {
+                        String[] names = from.alternateNames();
+                        if (names.length > 0) {
+                            fname = names[1];
+                        }
+                    }
+                } 
+                if (fname == null) {
                     fname = field.getName().toLowerCase();
                 }
                 sb.append("\"").append(fname).append("\"").append(":");
             }
             try {
-                final Object value = field.get(name);
+                Object value = field.get(name);
                 if (field.getType().isAssignableFrom(Integer.TYPE)) {
                     sb.append(value).append(",");
-                }
-                else if (field.getType().isAssignableFrom(Long.TYPE)) {
+                } else if (field.getType().isAssignableFrom(Long.TYPE)) {
                     sb.append(value).append(",");
-                }
-                else if (field.getType().isAssignableFrom(Double.TYPE)) {
+                } else if (field.getType().isAssignableFrom(Double.TYPE)) {
                     sb.append(value).append(",");
-                }
-                else if (field.getType().isAssignableFrom(Float.TYPE)) {
+                } else if (field.getType().isAssignableFrom(Float.TYPE)) {
                     sb.append(value).append(",");
-                }
-                else if (field.getType().isAssignableFrom(String.class)) {
+                } else if (field.getType().isAssignableFrom(String.class)) {
                     if (value == null) {
                         sb.append("null").append(",");
-                    }
-                    else {
+                    } else {
                         sb.append("\"").append(value).append("\"").append(",");
                     }
-                }
-                else if (field.getType().isAssignableFrom(Boolean.TYPE)) {
+                } else if (field.getType().isAssignableFrom(Boolean.TYPE)) {
                     sb.append(value).append(",");
-                }
-                else if (field.getType().isAssignableFrom(List.class)) {
+                } else if (field.getType().isAssignableFrom(List.class)) {
                     sb.append(JSON.toJSONString(value)).append(",");
-                }
-                else if (field.getType().isAssignableFrom(Map.class)) {
+                } else if (field.getType().isAssignableFrom(Map.class)) {
                     sb.append(JSON.toJSONString(value)).append(",");
-                }
-                else {
-                    final Class<?> type = field.getType();
+                } else {
+                    Class<?> type = field.getType();
                     sb.append(string(type, showFiledName)).append(",");
                 }
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }

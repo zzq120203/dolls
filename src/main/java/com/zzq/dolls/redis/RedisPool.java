@@ -3,15 +3,16 @@ package com.zzq.dolls.redis;
 import redis.clients.jedis.*;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class RedisPool {
-    private String urls;
+    private Set<String> urls;
 
-    private String authToken;
+    private String password;
 
     private RedisMode redisMode;
 
@@ -23,54 +24,63 @@ public class RedisPool {
 
     private String masterName;
 
+    private int db;
+
     private JedisPool pool;
     private JedisSentinelPool sentinel;
     private JedisCluster cluster;
 
     private RedisPool(Builder builder) {
-        this(builder.urls, builder.authToken, builder.redisMode, builder.timeout, builder.maxTotal, builder.maxIdle, builder.masterName);
+        this(builder.urls, builder.password, builder.redisMode, builder.timeout, builder.maxTotal, builder.maxIdle, builder.masterName, builder.db);
     }
 
-    public RedisPool(String urls, String authToken, RedisMode redisMode, int timeout, int maxTotal, int maxIdle, String masterName) {
+    public RedisPool(Set<String> urls, String password, RedisMode redisMode, int timeout, int maxTotal, int maxIdle, String masterName, int db) {
         this.urls = urls;
-        this.authToken = authToken;
+        this.password = password;
         this.redisMode = redisMode;
         this.timeout = timeout;
         this.maxTotal = maxTotal;
         this.maxIdle = maxIdle;
         this.masterName = masterName;
+        this.db = db;
         init();
     }
 
     private void init() {
+        if (urls == null) {
+            throw new NullPointerException("urls is null? try call function Builder.urls()");
+        }
         if (redisMode == RedisMode.STANDALONE) {
-            String[] s = urls.split(":");
-            HostAndPort hap = new HostAndPort(s[0], Integer.parseInt(s[1]));
-            JedisPoolConfig c = new JedisPoolConfig();
-            c.setMaxTotal(maxTotal);
-            c.setMaxIdle(maxIdle);
-            if (authToken != null)
-                pool = new JedisPool(c, hap.getHost(), hap.getPort(), timeout, authToken);
-            else
-                pool = new JedisPool(c, hap.getHost(), hap.getPort(), timeout);
-        } else if (redisMode == RedisMode.SENTINEL) {
-            Set<String> sentinels = Arrays.stream(urls.split(";")).collect(Collectors.toSet());
-            JedisPoolConfig c = new JedisPoolConfig();
-            c.setMaxTotal(maxTotal);
-            c.setMaxIdle(maxIdle);
-            if (authToken != null)
-                sentinel = new JedisSentinelPool(masterName, sentinels, c, timeout, authToken);
-            else
-                sentinel = new JedisSentinelPool(masterName, sentinels, c, timeout);
-        } else if (redisMode == RedisMode.CLUSTER) {
-            Set<HostAndPort> set = Arrays.stream(urls.split(";")).map(it -> {
+            if (urls.size() > 1) {
+                throw new UnsupportedOperationException("urls are incorrect, redis mode is RedisMode.STANDALONE?");
+            }
+            for (String url : urls) {
+                String[] s = url.split(":");
+                HostAndPort hap = new HostAndPort(s[0], Integer.parseInt(s[1]));
+                JedisPoolConfig config = new JedisPoolConfig();
+                config.setMaxTotal(maxTotal);
+                config.setMaxIdle(maxIdle);
+                pool = new JedisPool(config, hap.getHost(), hap.getPort(), timeout, password, db);
+            }
+        }
+        else if (redisMode == RedisMode.SENTINEL) {
+            if (masterName == null) {
+                throw new UnsupportedOperationException("master name can't null");
+            }
+            JedisPoolConfig config = new JedisPoolConfig();
+            config.setMaxTotal(maxTotal);
+            config.setMaxIdle(maxIdle);
+            sentinel = new JedisSentinelPool(masterName, urls, config, timeout, password, db);
+        }
+        else if (redisMode == RedisMode.CLUSTER) {
+            Set<HostAndPort> set = urls.stream().map(it -> {
                 String[] hps = it.split(":");
                 return new HostAndPort(hps[0], Integer.parseInt(hps[1]));
             }).collect(Collectors.toSet());
-            JedisPoolConfig c = new JedisPoolConfig();
-            c.setMaxTotal(maxTotal);
-            c.setMaxIdle(maxIdle);
-            cluster = new JedisCluster(set, c);
+            JedisPoolConfig config = new JedisPoolConfig();
+            config.setMaxTotal(maxTotal);
+            config.setMaxIdle(maxIdle);
+            cluster = new JedisCluster(set, timeout, timeout, 10, password, config);
         }
     }
 
@@ -154,9 +164,9 @@ public class RedisPool {
 
     public static final class Builder {
 
-        private String urls = null;
+        private Set<String> urls = null;
 
-        private String authToken = null;
+        private String password = null;
 
         private RedisMode redisMode = RedisMode.STANDALONE;
 
@@ -168,29 +178,40 @@ public class RedisPool {
 
         private String masterName = "nomaster";
 
+        private int db = 0;
+
         public RedisPool build() {
             return new RedisPool(this);
         }
 
+        public Builder url(final String url) {
+            if (this.urls == null) {
+                this.urls = new HashSet<String>();
+            }
+            this.urls.add(url);
+            return this;
+        }
+
         /**
          * 设置redis服务地址
-         * STANDALONE -> ip:port
-         * SENTINEL, CLUSTER -> ip:port;ip:port
          * @param urls redis地址 HostAndPort
          * @return
          */
-        public Builder urls(String urls) {
-            this.urls = urls;
+        public Builder urls(Collection<String> urls) {
+            if (this.urls == null) {
+                this.urls = new HashSet<String>();
+            }
+            this.urls.addAll(urls);
             return this;
         }
 
         /**
          * 设置服务口令，可选
-         * @param authToken 口令
+         * @param password 口令
          * @return
          */
-        public Builder authToken(String authToken) {
-            this.authToken = authToken;
+        public Builder password(String password) {
+            this.password = password;
             return this;
         }
 
@@ -202,6 +223,17 @@ public class RedisPool {
          */
         public Builder redisMode(RedisMode redisMode) {
             this.redisMode = redisMode;
+            return this;
+        }
+
+        /**
+         * 设置redis模式
+         * @see RedisMode
+         * @param redisMode redis服务模式， 默认 STANDALONE
+         * @return
+         */
+        public Builder redisMode(int redisMode) {
+            this.redisMode = RedisMode.create(redisMode);
             return this;
         }
 
@@ -242,6 +274,16 @@ public class RedisPool {
          */
         public Builder masterName(String masterName) {
             this.masterName = masterName;
+            return this;
+        }
+
+        /**
+         * 设置database  默认0
+         * @param db database id
+         * @return
+         */
+        public Builder db(int db) {
+            this.db = db;
             return this;
         }
     }

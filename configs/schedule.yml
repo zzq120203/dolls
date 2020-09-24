@@ -1,0 +1,16 @@
+#1.redis配置
+redisSentinels:
+  - 192.168.1.1:26379
+  - 192.168.1.2:26379
+redisMaster: mymaster
+#2.rabbitmq配置
+rabbitMqUsername: admin
+rabbitMqPassword: Ntdh@123
+rabbitMqHostName: 172.20.20.221
+rabbitMqPort: 5672
+rabbitMqQueueName: DataExchange.TaskQueue
+
+
+logLevel: 2
+
+outsideIp: ""

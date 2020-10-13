@@ -8,7 +8,7 @@ import org.apache.rocketmq.common.consumer.ConsumeFromWhere;
 import org.apache.rocketmq.common.message.MessageExt;
 
 import java.util.List;
-import java.util.function.Function;
+import java.util.function.Consumer;
 
 public class RocketConsumer {
 
@@ -47,9 +47,9 @@ public class RocketConsumer {
         init();
     }
 
-    public <T> void message(Function<MessageExt, T> fun) {
+    public <T> void message(Consumer<MessageExt> fun) {
         consumer.registerMessageListener((List<MessageExt> msgs, ConsumeConcurrentlyContext context) -> {
-            fun.apply(msgs.get(0));
+            fun.accept(msgs.get(0));
             return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
         });
     }

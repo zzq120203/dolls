@@ -100,35 +100,34 @@ public class LoadConfig {
         for (Field field : fields) {
             Object value = null;
             From from = field.getAnnotation(From.class);
-            if (from != null) {
-                String[] names = from.alternateNames();
-                boolean exist = false;
-                for (int i = names.length - 1; i >= 0; --i) {
-                    String name = names[i].toLowerCase();
-                    if (lcMap.containsKey(name)) {
-                        value = lcMap.get(name);
-                        exist = true;
-                    }
-                }
-                String name = from.name().toLowerCase();
-                if (name.isEmpty()) {
-                    name = field.getName().toLowerCase();
-                }
-                if (lcMap.containsKey(name)) {
+            boolean exist = false;
+            String name = field.getName().toLowerCase();
+            if (lcMap.containsKey(name)) {
+                value = lcMap.get(name);
+                exist = true;
+            } else {
+                name = from.name().toLowerCase();
+                if (!name.isEmpty() && lcMap.containsKey(name)) {
                     value = lcMap.get(name);
                     exist = true;
-                }
-                if (!exist) {
-                    boolean must = from.must();
-                    if (must) {
-                        throw new RuntimeException(
-                                c.getName() + " " + field.getName() + "(" + name + ") uninitialized");
+                } else {
+                    String[] names = from.alternateNames();
+                    for (String a_name: names) {
+                        if (lcMap.containsKey(a_name)) {
+                            value = lcMap.get(a_name);
+                            exist = true;
+                            continue;
+                        }
                     }
-                    continue;
                 }
-            } else {
-                String name = field.getName().toLowerCase();
-                value = lcMap.get(name);
+            }
+            if (!exist) {
+                boolean must = from.must();
+                if (must) {
+                    throw new RuntimeException(
+                            c.getName() + " " + field.getName() + "(" + name + ") uninitialized");
+                }
+                continue;
             }
             field.setAccessible(true);
             try {
@@ -165,6 +164,7 @@ public class LoadConfig {
                     load(tmp3, type);
                 }
             } catch (Exception e) {
+                System.out.println(field.getName() + " is error:");
                 e.printStackTrace();
             }
         }

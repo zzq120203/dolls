@@ -36,6 +36,8 @@ dependencies {
 
     compile group: 'redis.clients', name: 'jedis', version: '3.3.0'
 
+    compile 'com.rabbitmq:amqp-client:5.9.0'
+
 
 }
 

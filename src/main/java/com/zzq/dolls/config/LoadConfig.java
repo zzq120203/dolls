@@ -98,6 +98,9 @@ public class LoadConfig {
         Map<String, Object> lcMap = new HashMap<String, Object>();
         map.forEach((k, v) -> lcMap.put(k.toLowerCase(), v));
         for (Field field : fields) {
+            if (field.getType().isAssignableFrom(c)) {
+                continue;
+            }
             Object value = null;
             From from = field.getAnnotation(From.class);
             boolean exist = false;
@@ -178,6 +181,9 @@ public class LoadConfig {
         Field[] fields = c.getDeclaredFields();
         StringBuilder sb = new StringBuilder("{\"" + c.getName() + "\":{");
         for (Field field : fields) {
+            if (field.getType().isAssignableFrom(c)) {
+                continue;
+            }
             String name = field.getName();
             field.setAccessible(true);
             if (showFiledName) {
@@ -237,6 +243,9 @@ public class LoadConfig {
         Field[] fields = c.getDeclaredFields();
         StringBuilder sb = new StringBuilder("{");
         for (Field field : fields) {
+            if (field.getType().isAssignableFrom(c)) {
+                continue;
+            }
             String name = field.getName();
             field.setAccessible(true);
             if (showFiledName) {

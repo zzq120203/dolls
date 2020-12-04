@@ -1,40 +1,49 @@
 package com.zzq.dolls.redis;
 
+import com.redislabs.redisgraph.impl.api.RedisGraph;
+import com.zzq.dolls.redis.module.ModulePool;
+import com.zzq.dolls.redis.module.RedisJson;
+import com.zzq.dolls.redis.module.RedisSearch;
 import redis.clients.jedis.*;
 
+
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.zzq.dolls.redis.module.RedisModule;
+import redis.clients.jedis.util.Pool;
+
 public class RedisPool {
-    private Set<String> urls;
+    protected Set<String> urls;
 
-    private String password;
+    protected String password;
 
-    private RedisMode redisMode;
+    protected RedisMode redisMode;
 
-    private int timeout;
+    protected int timeout;
 
-    private int maxTotal;
+    protected int maxTotal;
 
-    private int maxIdle;
+    protected int maxIdle;
 
-    private String masterName;
+    protected String masterName;
 
-    private int db;
+    protected int db;
 
-    private JedisPool pool;
-    private JedisSentinelPool sentinel;
-    private JedisCluster cluster;
+    protected Set<RedisModule> redisModule;
 
-    private RedisPool(Builder builder) {
-        this(builder.urls, builder.password, builder.redisMode, builder.timeout, builder.maxTotal, builder.maxIdle, builder.masterName, builder.db);
+    protected Pool<Jedis> pool;
+    protected JedisCluster cluster;
+
+    protected RedisPool(Builder builder) {
+        this(builder.urls, builder.password, builder.redisMode, builder.timeout, builder.maxTotal, builder.maxIdle, builder.masterName, builder.db, builder.redisModule);
     }
 
-    public RedisPool(Set<String> urls, String password, RedisMode redisMode, int timeout, int maxTotal, int maxIdle, String masterName, int db) {
+    public RedisPool(Set<String> urls, String password, RedisMode redisMode,
+                        int timeout, int maxTotal, int maxIdle, String masterName,
+                        int db, Set<RedisModule> redisModule) {
         this.urls = urls;
         this.password = password;
         this.redisMode = redisMode;
@@ -43,10 +52,11 @@ public class RedisPool {
         this.maxIdle = maxIdle;
         this.masterName = masterName;
         this.db = db;
+        this.redisModule = redisModule;
         init();
     }
 
-    private void init() {
+    protected void init() {
         if (urls == null) {
             throw new NullPointerException("urls is null? try call function Builder.urls()");
         }
@@ -70,7 +80,7 @@ public class RedisPool {
             JedisPoolConfig config = new JedisPoolConfig();
             config.setMaxTotal(maxTotal);
             config.setMaxIdle(maxIdle);
-            sentinel = new JedisSentinelPool(masterName, urls, config, timeout, password, db);
+            pool = new JedisSentinelPool(masterName, urls, config, timeout, password, db);
         }
         else if (redisMode == RedisMode.CLUSTER) {
             Set<HostAndPort> set = urls.stream().map(it -> {
@@ -82,6 +92,7 @@ public class RedisPool {
             config.setMaxIdle(maxIdle);
             cluster = new JedisCluster(set, timeout, timeout, 10, password, config);
         }
+
     }
 
     /**
@@ -102,20 +113,6 @@ public class RedisPool {
         }
     }
 
-    ///**
-    // * set redisMode -> RedisMode.STANDALONE or RedisMode.SENTINEL
-    // * @param r redis接口
-    // */
-    //public void jedis(Consumer<Jedis> r) {
-    //    if (redisMode != RedisMode.STANDALONE && redisMode != RedisMode.SENTINEL)
-    //        throw new IllegalThreadStateException("redis mode is not standalone or sentinel");
-    //    try (Jedis jedis = getResource()) {
-    //        if (jedis != null) {
-    //            r.accept(jedis);
-    //        }
-    //    }
-    //}
-
     /**
      * set redisMode -> RedisMode.CLUSTER
      * @param r cluster接口
@@ -128,31 +125,29 @@ public class RedisPool {
         return r.apply(cluster);
     }
 
-    ///**
-    // * set redisMode -> RedisMode.CLUSTER
-    // * @param r cluster接口
-    // */
-    //public void cluster(Consumer<JedisCluster> r) {
-    //    if (redisMode != RedisMode.CLUSTER)
-    //        throw new IllegalThreadStateException("redis mode is not cluster");
-    //    r.accept(cluster);
-    //}
+    public <T> T json(Function<RedisJson, T> r) {
+        throw new IllegalThreadStateException("redis module is not Json");
+    }
+
+    public <T> T graph(Function<RedisGraph, T> r) {
+        throw new IllegalThreadStateException("redis module is not Graph");
+    }
+
+    public <T> T search(Function<RedisSearch, T> r) {
+        throw new IllegalThreadStateException("redis module is not Search");
+    }
 
     public void close() throws IOException {
-        if (redisMode == RedisMode.STANDALONE) {
+        if (redisMode == RedisMode.STANDALONE || redisMode == RedisMode.SENTINEL) {
             pool.close();
-        } else if (redisMode == RedisMode.SENTINEL) {
-            sentinel.close();
         } else if (redisMode == RedisMode.CLUSTER) {
             cluster.close();
         }
     }
 
     private Jedis getResource() {
-        if (redisMode == RedisMode.STANDALONE) {
+        if (redisMode == RedisMode.STANDALONE || redisMode == RedisMode.SENTINEL) {
             return pool.getResource();
-        } else if (redisMode == RedisMode.SENTINEL) {
-            return sentinel.getResource();
         } else {
             return null;
         }
@@ -180,15 +175,21 @@ public class RedisPool {
 
         private int db = 0;
 
+        private Set<RedisModule> redisModule;
+
         public RedisPool build() {
-            return new RedisPool(this);
+            if (redisModule != null && !redisModule.isEmpty()) {
+                return new ModulePool(this);
+            } else {
+                return new RedisPool(this);
+            }
         }
 
-        public Builder url(final String url) {
+        public Builder url(final String... url) {
             if (this.urls == null) {
-                this.urls = new HashSet<String>();
+                this.urls = new HashSet<>();
             }
-            this.urls.add(url);
+            this.urls.addAll(Arrays.asList(url));
             return this;
         }
 
@@ -199,7 +200,7 @@ public class RedisPool {
          */
         public Builder urls(Collection<String> urls) {
             if (this.urls == null) {
-                this.urls = new HashSet<String>();
+                this.urls = new HashSet<>();
             }
             this.urls.addAll(urls);
             return this;
@@ -223,6 +224,28 @@ public class RedisPool {
          */
         public Builder redisMode(RedisMode redisMode) {
             this.redisMode = redisMode;
+            return this;
+        }
+
+        public Builder redisModule(int... redisModules) {
+            if (this.redisModule == null) {
+                this.redisModule = new HashSet<>();
+            }
+            for (int redisModule : redisModules) {
+                if (redisModule == -1) {
+                    this.redisModule.addAll(Arrays.asList(RedisModule.values()));
+                    return this;
+                }
+                this.redisModule.add(RedisModule.create(redisModule));
+            }
+            return this;
+        }
+
+        public Builder redisModule(RedisModule... redisModule) {
+            if (this.redisModule == null) {
+                this.redisModule = new HashSet<>();
+            }
+            this.redisModule.addAll(Arrays.asList(redisModule));
             return this;
         }
 

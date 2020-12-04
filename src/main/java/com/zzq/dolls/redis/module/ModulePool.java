@@ -1,10 +1,8 @@
 package com.zzq.dolls.redis.module;
 
-import com.redislabs.modules.rejson.JReJSON;
 import com.redislabs.redisgraph.impl.api.RedisGraph;
 import com.zzq.dolls.redis.RedisPool;
 import com.zzq.dolls.redis.RedisMode;
-import io.redisearch.client.Client;
 
 import java.util.Set;
 import java.util.function.Function;
@@ -15,7 +13,7 @@ public class ModulePool extends RedisPool {
 
     private RedisGraph graph;
 
-    private Client search;
+    private RedisSearch search;
 
     public ModulePool(Builder builder) {
         super(builder);
@@ -37,7 +35,7 @@ public class ModulePool extends RedisPool {
             graph = new RedisGraph(super.pool);
         }
         if (this.redisModule.contains(RedisModule.Search)) {
-            search = new Client("test", super.pool);
+            search = new RedisSearch("test", super.pool);
         }
     }
 
@@ -58,7 +56,7 @@ public class ModulePool extends RedisPool {
     }
 
     @Override
-    public <T> T search(Function<Client, T> r) {
+    public <T> T search(Function<RedisSearch, T> r) {
         return r.apply(search);
     }
 

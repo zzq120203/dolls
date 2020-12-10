@@ -29,7 +29,8 @@ public class RedisJson extends JReJSON {
         GET("JSON.GET"),
         ARRAPPEND("JSON.ARRAPPEND"),
         STRAPPEND("JSON.STRAPPEND"),
-        OBJLEN("JSON.OBJLEN");
+        OBJLEN("JSON.OBJLEN"),
+        SET("JSON.SET");
         private final byte[] raw;
 
         Command(String alt) {
@@ -61,6 +62,9 @@ public class RedisJson extends JReJSON {
             conn.getClient().sendCommand(Command.GET, args);
             rep = conn.getClient().getBulkReply();
         }
+        if (rep == null) {
+            return null;
+        }
         assertReplyNotError(rep);
         return gson.fromJson(rep, type);
     }
@@ -70,27 +74,43 @@ public class RedisJson extends JReJSON {
 
         args.add(SafeEncoder.encode(key));
         args.add(SafeEncoder.encode(path.toString()));
-        args.add(SafeEncoder.encode(gson.toJson(object)));
+        if (object instanceof List) {
+            ((List<?>) object).forEach(obj ->
+                    args.add(SafeEncoder.encode(gson.toJson(obj)))
+            );
+        } else {
+            args.add(SafeEncoder.encode(gson.toJson(object)));
+        }
 
-        String status;
+        Object status;
         try (Jedis conn = getConnection()) {
             conn.getClient()
                     .sendCommand(Command.ARRAPPEND, args.toArray(new byte[args.size()][]));
             try {
-                status = conn.getClient().getStatusCodeReply();
+                status = conn.getClient().getIntegerReply();
             } catch (JedisDataException e) {
                 if (e.getMessage().startsWith("ERR key")) {
                     // arr is not exist , set
-                    List<Object> objects = new ArrayList<>();
-                    objects.add(object);
-                    set(key, objects, path);
-                    status = "OK";
+
+                    args.clear();
+                    args.add(SafeEncoder.encode(key));
+                    args.add(SafeEncoder.encode(path.toString()));
+                    if (object instanceof List) {
+                        args.add(SafeEncoder.encode(gson.toJson(object)));
+                    } else {
+                        List<Object> objects = new ArrayList<>();
+                        objects.add(object);
+                        args.add(SafeEncoder.encode(gson.toJson(objects)));
+                    }
+                    conn.getClient()
+                            .sendCommand(Command.SET, args.toArray(new byte[args.size()][]));
+                    status = conn.getClient().getStatusCodeReply();
                 } else {
                     throw new JedisDataException(e.getMessage());
                 }
             }
         }
-        assertReplyOK(status);
+        assertReplyNotError(status);
     }
 
     public void strAppend(String key, Object object, Path path) {
@@ -99,19 +119,30 @@ public class RedisJson extends JReJSON {
 
         args.add(SafeEncoder.encode(key));
         args.add(SafeEncoder.encode(path.toString()));
-        args.add(SafeEncoder.encode(gson.toJson(object)));
+        if (object instanceof List) {
+            ((List<?>) object).forEach(obj ->
+                args.add(SafeEncoder.encode(gson.toJson(obj)))
+            );
+        } else {
+            args.add(SafeEncoder.encode(gson.toJson(object)));
+        }
 
-        String status;
+        Object status;
         try (Jedis conn = getConnection()) {
             conn.getClient()
                     .sendCommand(Command.STRAPPEND, args.toArray(new byte[args.size()][]));
             try {
-                status = conn.getClient().getStatusCodeReply();
+                status = conn.getClient().getIntegerReply();
             } catch (JedisDataException e) {
                 if (e.getMessage().startsWith("ERR key")) {
                     // str is not exist , set
-                    set(key, object, path);
-                    status = "OK";
+                    args.clear();
+                    args.add(SafeEncoder.encode(key));
+                    args.add(SafeEncoder.encode(path.toString()));
+                    args.add(SafeEncoder.encode(gson.toJson(object)));
+                    conn.getClient()
+                            .sendCommand(Command.SET, args.toArray(new byte[args.size()][]));
+                    status = conn.getClient().getStatusCodeReply();
                 } else {
                     throw new JedisDataException(e.getMessage());
                 }
@@ -148,18 +179,18 @@ public class RedisJson extends JReJSON {
      * Helper to check for an OK reply
      * @param str the reply string to "scrutinize"
      */
-    private static void assertReplyOK(final String str) {
-        if (!str.equals("OK"))
-            throw new RuntimeException(str);
+    private static void assertReplyOK(final Object str) {
+        if (str instanceof String && !str.toString().equals("OK"))
+            throw new RuntimeException((String) str);
     }
     /**
      *  Helper to check for errors and throw them as an exception
      * @param str the reply string to "analyze"
      * @throws RuntimeException
      */
-    private static void assertReplyNotError(final String str) {
-        if (str.startsWith("-ERR"))
-            throw new RuntimeException(str.substring(5));
+    private static void assertReplyNotError(final Object str) {
+        if (str instanceof String && str.toString().startsWith("-ERR"))
+            throw new RuntimeException(str.toString().substring(5));
     }
 
 }

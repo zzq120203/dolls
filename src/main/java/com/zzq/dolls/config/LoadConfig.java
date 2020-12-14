@@ -5,20 +5,25 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import com.zzq.dolls.config.load.YamlLoad;
 
 import org.apache.commons.io.FileUtils;
+import org.yaml.snakeyaml.Yaml;
 
 public class LoadConfig {
+
+    @SafeVarargs
+    public static <T> void load(Class<T>... cs) throws IOException {
+        for (Class<T> c : cs) {
+            load(c);
+        }
+    }
+
     public static <T> void load(Class<T> c) throws IOException {
         From from = c.getAnnotation(From.class);
         if (from == null) {
@@ -75,14 +80,14 @@ public class LoadConfig {
                 break;
             }
             case YAML: {
-                YamlLoad yaml = new YamlLoad();
-                Map<String, Object> map = yaml.LoadFile(file);
-                load(map, c);
+                try (FileInputStream stream = new FileInputStream(file)) {
+                    Yaml yaml = new Yaml();
+                    Map<String, Object> map = yaml.load(stream);
+                    load(map, c);
+                }
                 break;
             }
-            case HOCON: {
-                throw new IOException("undefinition");
-            }
+            case HOCON:
             case INI: {
                 throw new IOException("undefinition");
             }
@@ -90,12 +95,12 @@ public class LoadConfig {
     }
 
     public static <T> void load(String json, Class<T> c) {
-        load((Map<String, Object>) JSONObject.parseObject(json), c);
+        load(JSONObject.parseObject(json), c);
     }
 
     public static <T> void load(Map<String, Object> map, Class<T> c) {
         Field[] fields = c.getDeclaredFields();
-        Map<String, Object> lcMap = new HashMap<String, Object>();
+        Map<String, Object> lcMap = new HashMap<>();
         map.forEach((k, v) -> lcMap.put(k.toLowerCase(), v));
         for (Field field : fields) {
             if (field.getType().isAssignableFrom(c)) {
@@ -108,7 +113,7 @@ public class LoadConfig {
             if (lcMap.containsKey(name)) {
                 value = lcMap.get(name);
                 exist = true;
-            } else {
+            } else if (from != null) {
                 name = from.name().toLowerCase();
                 if (!name.isEmpty() && lcMap.containsKey(name)) {
                     value = lcMap.get(name);
@@ -119,13 +124,12 @@ public class LoadConfig {
                         if (lcMap.containsKey(a_name)) {
                             value = lcMap.get(a_name);
                             exist = true;
-                            continue;
                         }
                     }
                 }
             }
             if (!exist) {
-                boolean must = from.must();
+                boolean must = from == null || from.must();
                 if (must) {
                     throw new RuntimeException(
                             c.getName() + " " + field.getName() + "(" + name + ") uninitialized");
@@ -155,15 +159,15 @@ public class LoadConfig {
                     }
                 } else if (field.getType().isAssignableFrom(Boolean.TYPE)) {
                     field.set(null, Boolean.parseBoolean(value.toString()));
-                } else if (field.getType().isAssignableFrom(List.class)) {
-                    Class<?> clazz = from.subClass();
+                } else if (Collection.class.isAssignableFrom(field.getType())) {
+                    Class<?> clazz = from == null ? Object.class : from.subClass();
                     field.set(null, JSON.parseArray(JSON.toJSONString(value), clazz));
                 } else if (field.getType().isAssignableFrom(Map.class)) {
-                    Map<String, Object> tmp2 = (Map<String, Object>) JSONObject.parseObject(JSON.toJSONString(value));
+                    Map<String, Object> tmp2 = JSONObject.parseObject(JSON.toJSONString(value));
                     field.set(null, tmp2);
                 } else {
                     Class<?> type = field.getType();
-                    Map<String, Object> tmp3 = (Map<String, Object>) JSONObject.parseObject(JSON.toJSONString(value));
+                    Map<String, Object> tmp3 = JSONObject.parseObject(JSON.toJSONString(value));
                     load(tmp3, type);
                 }
             } catch (Exception e) {
@@ -223,7 +227,7 @@ public class LoadConfig {
                     }
                 } else if (field.getType().isAssignableFrom(Boolean.TYPE)) {
                     sb.append(value).append(",");
-                } else if (field.getType().isAssignableFrom(List.class)) {
+                } else if (Collection.class.isAssignableFrom(field.getType())) {
                     sb.append(JSON.toJSONString(value)).append(",");
                 } else if (field.getType().isAssignableFrom(Map.class)) {
                     sb.append(JSON.toJSONString(value)).append(",");
@@ -285,7 +289,7 @@ public class LoadConfig {
                     }
                 } else if (field.getType().isAssignableFrom(Boolean.TYPE)) {
                     sb.append(value).append(",");
-                } else if (field.getType().isAssignableFrom(List.class)) {
+                } else if (Collection.class.isAssignableFrom(field.getType())) {
                     sb.append(JSON.toJSONString(value)).append(",");
                 } else if (field.getType().isAssignableFrom(Map.class)) {
                     sb.append(JSON.toJSONString(value)).append(",");

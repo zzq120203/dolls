@@ -9,6 +9,7 @@ import redis.clients.jedis.*;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -111,6 +112,20 @@ public class RedisPool {
                 return null;
             }
         }
+    }
+
+    /**
+     * set redisMode -> RedisMode.STANDALONE or RedisMode.SENTINEL
+     * @param p Pipeline
+     */
+    public void pip(Consumer<Pipeline> p) {
+        jedis(jedis -> {
+            try (Pipeline pip = jedis.pipelined()) {
+                p.accept(pip);
+                pip.sync();
+            }
+            return null;
+        });
     }
 
     /**

@@ -1,9 +1,6 @@
 package com.zzq.dolls.redis;
 
-import com.redislabs.redisgraph.impl.api.RedisGraph;
-import com.zzq.dolls.redis.module.ModulePool;
-import com.zzq.dolls.redis.module.RedisJson;
-import com.zzq.dolls.redis.module.RedisSearch;
+import com.zzq.dolls.redis.module.*;
 import redis.clients.jedis.*;
 
 
@@ -13,7 +10,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.zzq.dolls.redis.module.RedisModule;
 import redis.clients.jedis.util.Pool;
 
 public class RedisPool {
@@ -122,7 +118,6 @@ public class RedisPool {
         jedis(jedis -> {
             try (Pipeline pip = jedis.pipelined()) {
                 p.accept(pip);
-                pip.sync();
             }
             return null;
         });
@@ -144,7 +139,7 @@ public class RedisPool {
         throw new IllegalThreadStateException("redis module is not Json");
     }
 
-    public <T> T graph(Function<RedisGraph, T> r) {
+    public <T> T graph(Function<RedisGraphs, T> r) {
         throw new IllegalThreadStateException("redis module is not Graph");
     }
 

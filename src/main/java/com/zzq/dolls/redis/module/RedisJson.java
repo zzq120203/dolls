@@ -69,6 +69,25 @@ public class RedisJson extends JReJSON {
         return gson.fromJson(rep, type);
     }
 
+    public Boolean setnx(String key, Object object, Path path) {
+
+        List<byte[]> args = new ArrayList<>(4);
+
+        args.add(SafeEncoder.encode(key));
+        args.add(SafeEncoder.encode(path.toString()));
+        args.add(SafeEncoder.encode(gson.toJson(object)));
+        args.add(ExistenceModifier.NOT_EXISTS.getRaw());
+
+        String status;
+        try (Jedis conn = getConnection()) {
+            conn.getClient()
+                    .sendCommand(Command.SET, args.toArray(new byte[args.size()][]));
+            status = conn.getClient().getStatusCodeReply();
+        }
+        assertReplyOK(status);
+        return status != null;
+    }
+
     public void arrAppend(String key, Object object, Path path) {
         List<byte[]> args = new ArrayList<>(4);
 
@@ -191,6 +210,13 @@ public class RedisJson extends JReJSON {
     private static void assertReplyNotError(final Object str) {
         if (str instanceof String && str.toString().startsWith("-ERR"))
             throw new RuntimeException(str.toString().substring(5));
+    }
+
+
+    public ModulePipeline pipelined() {
+        ModulePipeline pipeline = new ModulePipeline();
+        pipeline.setClient(getConnection().getClient());
+        return pipeline;
     }
 
 }

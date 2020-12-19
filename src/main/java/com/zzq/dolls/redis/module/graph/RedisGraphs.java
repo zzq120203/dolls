@@ -1,6 +1,7 @@
-package com.zzq.dolls.redis.module;
+package com.zzq.dolls.redis.module.graph;
 
 import com.redislabs.redisgraph.impl.api.RedisGraph;
+import com.zzq.dolls.redis.module.ModulePipeline;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.util.Pool;
 

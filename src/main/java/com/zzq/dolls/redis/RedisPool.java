@@ -13,26 +13,28 @@ import java.util.stream.Collectors;
 import redis.clients.jedis.util.Pool;
 
 public class RedisPool {
-    protected Set<String> urls;
+    private Set<String> urls;
 
-    protected String password;
+    private String password;
 
-    protected RedisMode redisMode;
+    private RedisMode redisMode;
 
-    protected int timeout;
+    private int timeout;
 
-    protected int maxTotal;
+    private int maxTotal;
 
-    protected int maxIdle;
+    private int maxIdle;
 
-    protected String masterName;
+    private String masterName;
 
-    protected int db;
+    private int db;
 
-    protected Set<RedisModule> redisModule;
+    private Set<RedisModule> redisModule;
 
     protected Pool<Jedis> pool;
     protected JedisCluster cluster;
+
+    private ModulePool modulePool;
 
     protected RedisPool(Builder builder) {
         this(builder.urls, builder.password, builder.redisMode, builder.timeout, builder.maxTotal, builder.maxIdle, builder.masterName, builder.db, builder.redisModule);
@@ -90,6 +92,16 @@ public class RedisPool {
             cluster = new JedisCluster(set, timeout, timeout, 10, password, config);
         }
 
+        if (!redisModule.isEmpty()) {
+            if (redisMode == RedisMode.SENTINEL || redisMode == RedisMode.STANDALONE) {
+                modulePool = new ModulePool(pool, redisMode, redisModule);
+            } else if (redisMode == RedisMode.CLUSTER) {
+                modulePool = new ModulePool(urls, redisMode, redisModule, maxTotal, maxIdle, timeout, password);
+            } else {
+                throw new IllegalThreadStateException("redis mode is not cluster, standalone or sentinel");
+            }
+        }
+
     }
 
     /**
@@ -135,16 +147,8 @@ public class RedisPool {
         return r.apply(cluster);
     }
 
-    public <T> T json(Function<RedisJson, T> r) {
-        throw new IllegalThreadStateException("redis module is not Json");
-    }
-
-    public <T> T graph(Function<RedisGraphs, T> r) {
-        throw new IllegalThreadStateException("redis module is not Graph");
-    }
-
-    public <T> T search(Function<RedisSearch, T> r) {
-        throw new IllegalThreadStateException("redis module is not Search");
+    public ModulePool module() {
+        return modulePool;
     }
 
     public void close() throws IOException {
@@ -188,11 +192,7 @@ public class RedisPool {
         private Set<RedisModule> redisModule;
 
         public RedisPool build() {
-            if (redisModule != null && !redisModule.isEmpty()) {
-                return new ModulePool(this);
-            } else {
-                return new RedisPool(this);
-            }
+            return new RedisPool(this);
         }
 
         public Builder url(final String... url) {

@@ -1,4 +1,4 @@
-package com.zzq.dolls.redis.module;
+package com.zzq.dolls.redis.module.search;
 
 import io.redisearch.client.Client;
 import redis.clients.jedis.Jedis;

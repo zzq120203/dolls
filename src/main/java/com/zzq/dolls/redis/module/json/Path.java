@@ -5,7 +5,7 @@ package com.zzq.dolls.redis.module.json;
  */
 public class Path {
 
-    public static final com.redislabs.modules.rejson.Path ROOT_PATH = new com.redislabs.modules.rejson.Path(".");
+    public static final Path ROOT_PATH = new Path(".");
 
     private final String strPath;
 
@@ -19,8 +19,8 @@ public class Path {
      * @deprecated use {@link #ROOT_PATH} instead
      */
     @Deprecated
-    public static com.redislabs.modules.rejson.Path RootPath() {
-        return new com.redislabs.modules.rejson.Path(".");
+    public static Path RootPath() {
+        return new Path(".");
     }
 
     @Override

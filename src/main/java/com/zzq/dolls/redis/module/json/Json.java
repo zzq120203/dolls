@@ -1,13 +1,31 @@
 package com.zzq.dolls.redis.module.json;
 
-import com.redislabs.modules.rejson.JReJSON;
-import com.redislabs.modules.rejson.Path;
+import redis.clients.jedis.commands.ProtocolCommand;
+import redis.clients.jedis.util.SafeEncoder;
 
 import java.lang.reflect.Type;
 
 public interface Json {
 
-    public Long del(final String key, final com.redislabs.modules.rejson.Path path);
+    /**
+     * Existential modifier for the set command, by default we don't care
+     */
+    public enum ExistenceModifier implements ProtocolCommand {
+        DEFAULT(""),
+        NOT_EXISTS("NX"),
+        MUST_EXIST("XX");
+        private final byte[] raw;
+
+        ExistenceModifier(String alt) {
+            raw = SafeEncoder.encode(alt);
+        }
+
+        public byte[] getRaw() {
+            return raw;
+        }
+    }
+
+    public Long del(final String key, final Path path);
 
     public <T> T get(String key, Type type, Path... paths);
 
@@ -22,7 +40,7 @@ public interface Json {
      * @param paths optional one ore more paths in the object
      * @return the requested object
      */
-    public <T> T get(String key, Class<T> clazz, com.redislabs.modules.rejson.Path... paths);
+    public <T> T get(String key, Class<T> clazz, Path... paths);
 
     /**
      * Sets an object at the root path
@@ -30,7 +48,7 @@ public interface Json {
      * @param object the Java object to store
      * @param flag an existential modifier
      */
-    public void set(String key, Object object, JReJSON.ExistenceModifier flag);
+    public void set(String key, Object object, ExistenceModifier flag);
 
     /**
      * Sets an object in the root path
@@ -45,13 +63,13 @@ public interface Json {
      * @param object the Java object to store
      * @param path in the object
      */
-    public void set(String key, Object object, com.redislabs.modules.rejson.Path path);
+    public void set(String key, Object object, Path path);
 
-    public void set(String key, Object object, JReJSON.ExistenceModifier flag, com.redislabs.modules.rejson.Path path);
+    public void set(String key, Object object, ExistenceModifier flag, Path path);
 
-    public Boolean setnx(String key, Object object, com.redislabs.modules.rejson.Path path);
+    public Boolean setnx(String key, Object object, Path path);
 
-    public void arrAppend(String key, Object object, com.redislabs.modules.rejson.Path path);
+    public void arrAppend(String key, Object object, Path path);
 
 
     public void strAppend(String key, Object object, Path path);

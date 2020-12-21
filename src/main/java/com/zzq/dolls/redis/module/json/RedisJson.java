@@ -1,8 +1,6 @@
 package com.zzq.dolls.redis.module.json;
 
 import com.google.gson.Gson;
-import com.redislabs.modules.rejson.JReJSON;
-import com.redislabs.modules.rejson.Path;
 import com.zzq.dolls.redis.exception.KeyNotFoundException;
 import com.zzq.dolls.redis.module.ModulePipeline;
 import redis.clients.jedis.Jedis;
@@ -33,24 +31,6 @@ public class RedisJson implements Json {
         private final byte[] raw;
 
         Command(String alt) {
-            raw = SafeEncoder.encode(alt);
-        }
-
-        public byte[] getRaw() {
-            return raw;
-        }
-    }
-
-    /**
-     * Existential modifier for the set command, by default we don't care
-     */
-    public enum ExistenceModifier implements ProtocolCommand {
-        DEFAULT(""),
-        NOT_EXISTS("NX"),
-        MUST_EXIST("XX");
-        private final byte[] raw;
-
-        ExistenceModifier(String alt) {
             raw = SafeEncoder.encode(alt);
         }
 
@@ -104,7 +84,7 @@ public class RedisJson implements Json {
             status = conn.getClient().getStatusCodeReply();
         }
         assertReplyOK(status);
-        return true;
+        return status != null;
     }
 
     @Override
@@ -344,7 +324,7 @@ public class RedisJson implements Json {
      * @param flag an existential modifier
      */
     @Override
-    public void set(String key, Object object, JReJSON.ExistenceModifier flag) {
+    public void set(String key, Object object, ExistenceModifier flag) {
         set(key, object, flag, Path.ROOT_PATH);
     }
 
@@ -355,7 +335,7 @@ public class RedisJson implements Json {
      */
     @Override
     public void set(String key, Object object) {
-        set(key, object, JReJSON.ExistenceModifier.DEFAULT, Path.ROOT_PATH);
+        set(key, object, ExistenceModifier.DEFAULT, Path.ROOT_PATH);
     }
 
     /**
@@ -366,7 +346,7 @@ public class RedisJson implements Json {
      */
     @Override
     public void set(String key, Object object, Path path) {
-        set(key, object, JReJSON.ExistenceModifier.DEFAULT, path);
+        set(key, object, ExistenceModifier.DEFAULT, path);
     }
 
     /**
@@ -378,14 +358,14 @@ public class RedisJson implements Json {
      * @return
      */
     @Override
-    public void set(String key, Object object, JReJSON.ExistenceModifier flag, Path path) {
+    public void set(String key, Object object, ExistenceModifier flag, Path path) {
 
         List<byte[]> args = new ArrayList<>(4);
 
         args.add(SafeEncoder.encode(key));
         args.add(SafeEncoder.encode(path.toString()));
         args.add(SafeEncoder.encode(gson.toJson(object)));
-        if (JReJSON.ExistenceModifier.DEFAULT != flag) {
+        if (ExistenceModifier.DEFAULT != flag) {
             args.add(flag.getRaw());
         }
 
@@ -495,16 +475,16 @@ public class RedisJson implements Json {
      * @param object the Java object to store
      * @param flag an existential modifier
      * @param path optional single path in the object, defaults to root
-     * @deprecated use {@link #set(String, Object, JReJSON.ExistenceModifier, Path)} instead
+     * @deprecated use {@link #set(String, Object, ExistenceModifier, Path)} instead
      */
-    protected static void set(Jedis conn, String key, Object object, JReJSON.ExistenceModifier flag, Path... path) {
+    protected static void set(Jedis conn, String key, Object object, ExistenceModifier flag, Path... path) {
 
         List<byte[]> args = new ArrayList<>(4);
 
         args.add(SafeEncoder.encode(key));
         args.add(SafeEncoder.encode(getSingleOptionalPath(path).toString()));
         args.add(SafeEncoder.encode(gson.toJson(object)));
-        if (JReJSON.ExistenceModifier.DEFAULT != flag) {
+        if (ExistenceModifier.DEFAULT != flag) {
             args.add(flag.getRaw());
         }
 
@@ -521,10 +501,10 @@ public class RedisJson implements Json {
      * @param key the key name
      * @param object the Java object to store
      * @param path optional single path in the object, defaults to root
-     * @deprecated use {@link #set(String, Object, JReJSON.ExistenceModifier, Path)} instead
+     * @deprecated use {@link #set(String, Object, ExistenceModifier, Path)} instead
      */
     protected static void set(Jedis conn, String key, Object object, Path... path) {
-        set(conn,key, object, JReJSON.ExistenceModifier.DEFAULT, path);
+        set(conn,key, object, ExistenceModifier.DEFAULT, path);
     }
 
     /**
@@ -606,7 +586,7 @@ public class RedisJson implements Json {
                 .sendCommand(Command.SET, args.toArray(new byte[args.size()][]));
         String status = conn.getClient().getStatusCodeReply();
         assertReplyOK(status);
-        return true;
+        return status != null;
     }
 
     protected static void arrAppend(Jedis conn, String key, Object object, Path path) {
@@ -658,7 +638,7 @@ public class RedisJson implements Json {
         assertReplyNotError(status);
     }
 
-    protected void strAppend(Jedis conn, String key, Object object, Path path) {
+    protected static void strAppend(Jedis conn, String key, Object object, Path path) {
 
         List<byte[]> args = new ArrayList<>(3);
 

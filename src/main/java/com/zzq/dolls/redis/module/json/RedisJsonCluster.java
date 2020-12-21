@@ -1,7 +1,5 @@
 package com.zzq.dolls.redis.module.json;
 
-import com.redislabs.modules.rejson.JReJSON;
-import com.redislabs.modules.rejson.Path;
 import com.zzq.dolls.redis.module.ModuleCluster;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import redis.clients.jedis.*;
@@ -137,12 +135,22 @@ public class RedisJsonCluster extends ModuleCluster {
 
     @Override
     public <T> T get(String key, Type type, Path... paths) {
-        return null;
+        return new JedisClusterCommand<T>(connectionHandler, maxAttempts) {
+            @Override
+            public T execute(Jedis connection) {
+                return RedisJson.get(connection, key, type, paths);
+            }
+        }.run(key);
     }
 
     @Override
     public <T> T get(String key, Path... paths) {
-        return null;
+        return new JedisClusterCommand<T>(connectionHandler, maxAttempts) {
+            @Override
+            public T execute(Jedis connection) {
+                return (T) RedisJson.get(connection, key, Object.class, paths);
+            }
+        }.run(key);
     }
 
     /**
@@ -169,7 +177,7 @@ public class RedisJsonCluster extends ModuleCluster {
      * @param flag an existential modifier
      */
     @Override
-    public void set(String key, Object object, JReJSON.ExistenceModifier flag) {
+    public void set(String key, Object object, ExistenceModifier flag) {
         set(key, object, flag, Path.ROOT_PATH);
     }
 
@@ -180,7 +188,7 @@ public class RedisJsonCluster extends ModuleCluster {
      */
     @Override
     public void set(String key, Object object) {
-        set(key, object, JReJSON.ExistenceModifier.DEFAULT, Path.ROOT_PATH);
+        set(key, object, ExistenceModifier.DEFAULT, Path.ROOT_PATH);
     }
 
     /**
@@ -191,11 +199,11 @@ public class RedisJsonCluster extends ModuleCluster {
      */
     @Override
     public void set(String key, Object object, Path path) {
-        set(key, object, JReJSON.ExistenceModifier.DEFAULT, path);
+        set(key, object, ExistenceModifier.DEFAULT, path);
     }
 
     @Override
-    public void set(String key, Object object, JReJSON.ExistenceModifier flag, Path path) {
+    public void set(String key, Object object, ExistenceModifier flag, Path path) {
         new JedisClusterCommand<Integer>(connectionHandler, maxAttempts) {
             @Override
             public Integer execute(Jedis connection) {
@@ -220,7 +228,8 @@ public class RedisJsonCluster extends ModuleCluster {
         new JedisClusterCommand<Boolean>(connectionHandler, maxAttempts) {
             @Override
             public Boolean execute(Jedis connection) {
-                return RedisJson.setnx(connection, key, object, path);
+                RedisJson.arrAppend(connection, key, object, path);
+                return true;
             }
         }.run(key);
     }
@@ -230,7 +239,8 @@ public class RedisJsonCluster extends ModuleCluster {
         new JedisClusterCommand<Boolean>(connectionHandler, maxAttempts) {
             @Override
             public Boolean execute(Jedis connection) {
-                return RedisJson.setnx(connection, key, object, path);
+                RedisJson.strAppend(connection, key, object, path);
+                return true;
             }
         }.run(key);
     }

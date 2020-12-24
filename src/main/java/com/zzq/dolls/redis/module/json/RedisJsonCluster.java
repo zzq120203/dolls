@@ -1,13 +1,12 @@
 package com.zzq.dolls.redis.module.json;
 
-import com.zzq.dolls.redis.module.ModuleCluster;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import redis.clients.jedis.*;
 
 import java.lang.reflect.Type;
 import java.util.Set;
 
-public class RedisJsonCluster extends ModuleCluster {
+public class RedisJsonCluster extends JedisCluster implements Json {
 
     public RedisJsonCluster(Set<HostAndPort> jedisClusterNode, int connectionTimeout, int soTimeout, int maxAttempts, String password, GenericObjectPoolConfig poolConfig) {
         super(jedisClusterNode, connectionTimeout, soTimeout, maxAttempts, password, poolConfig);

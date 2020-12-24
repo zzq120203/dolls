@@ -4,7 +4,7 @@ import com.redislabs.redisgraph.impl.api.RedisGraph;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.util.Pool;
 
-public class RedisGraphs extends RedisGraph {
+public class RedisGraphs extends RedisGraph implements Graph {
 
     public RedisGraphs() {
     }

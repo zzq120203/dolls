@@ -86,9 +86,4 @@ public class ModulePool {
         return r.apply(search);
     }
 
-    public <T> T cluster(Function<ModuleCluster, T> r) {
-        if (redisMode != RedisMode.CLUSTER)
-            throw new IllegalThreadStateException("redis mode is not cluster");
-        return r.apply(jsonCluster);
-    }
 }

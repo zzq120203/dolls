@@ -1,12 +1,12 @@
 package com.zzq.dolls.redis;
 
+import com.zzq.dolls.redis.mini.MiniPool;
 import com.zzq.dolls.redis.module.*;
 import redis.clients.jedis.*;
 
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -14,8 +14,6 @@ import java.util.stream.Collectors;
 import redis.clients.jedis.util.Pool;
 
 public class RedisPool {
-
-    private static ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     private Set<String> urls;
 
@@ -39,6 +37,7 @@ public class RedisPool {
     protected JedisCluster cluster;
 
     private ModulePool modulePool;
+    private MiniPool miniPool;
 
     protected RedisPool(Builder builder) {
         this(builder.urls, builder.password, builder.redisMode, builder.timeout, builder.maxTotal, builder.maxIdle, builder.masterName, builder.db, builder.redisModule);
@@ -126,18 +125,6 @@ public class RedisPool {
         }
     }
 
-    private <T> T jedis(int seconds, Function<Jedis, T> r) throws TimeoutException {
-        if (redisMode != RedisMode.STANDALONE && redisMode != RedisMode.SENTINEL)
-            throw new IllegalThreadStateException("redis mode is not standalone or sentinel");
-        try (Jedis jedis = getResource(seconds)) {
-            if (jedis != null) {
-                return r.apply(jedis);
-            } else {
-                return null;
-            }
-        }
-    }
-
     /**
      * set redisMode -> RedisMode.STANDALONE or RedisMode.SENTINEL
      * @param p Pipeline
@@ -167,26 +154,19 @@ public class RedisPool {
         return modulePool;
     }
 
+    public MiniPool mini() {
+        if (miniPool == null) {
+            miniPool = new MiniPool(this.urls, this.password, this.redisMode, this.timeout, this.maxTotal, this.maxIdle, this.masterName, this.db);
+        }
+        return miniPool;
+    }
+
     public void close() throws IOException {
         if (redisMode == RedisMode.STANDALONE || redisMode == RedisMode.SENTINEL) {
             pool.close();
         } else if (redisMode == RedisMode.CLUSTER) {
             cluster.close();
         }
-    }
-
-    private Jedis getResource(int seconds) throws TimeoutException {
-        Jedis jedis;
-        FutureTask<Jedis> futureTask = new FutureTask<>(this::getResource);
-
-        executorService.execute(futureTask);
-        try {
-            jedis = futureTask.get(seconds, TimeUnit.SECONDS);
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            futureTask.cancel(true);
-            throw new TimeoutException("get resource timeout("+seconds+"s)");
-        }
-        return jedis;
     }
 
     private Jedis getResource() {

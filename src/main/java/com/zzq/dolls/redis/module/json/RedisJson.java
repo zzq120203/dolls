@@ -2,9 +2,7 @@ package com.zzq.dolls.redis.module.json;
 
 import com.google.gson.Gson;
 import com.zzq.dolls.redis.exception.KeyNotFoundException;
-import com.zzq.dolls.redis.module.ModulePipeline;
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.commands.ProtocolCommand;
 import redis.clients.jedis.exceptions.JedisDataException;
 import redis.clients.jedis.util.Pool;
@@ -20,7 +18,7 @@ public class RedisJson implements Json {
 
     private final Pool<Jedis> client;
 
-    private enum Command implements ProtocolCommand {
+    protected enum Command implements ProtocolCommand {
         ARRAPPEND("JSON.ARRAPPEND"),
         STRAPPEND("JSON.STRAPPEND"),
         OBJLEN("JSON.OBJLEN"),
@@ -41,7 +39,8 @@ public class RedisJson implements Json {
 
     /**
      * Gets an object
-     * @param key the key name
+     *
+     * @param key   the key name
      * @param type
      * @param paths optional one ore more paths in the object
      * @return the requested object
@@ -49,9 +48,9 @@ public class RedisJson implements Json {
     @Override
     public <T> T get(String key, Type type, Path... paths) {
         byte[][] args = new byte[1 + paths.length][];
-        int i=0;
+        int i = 0;
         args[i] = SafeEncoder.encode(key);
-        for (Path p :paths) {
+        for (Path p : paths) {
             args[++i] = SafeEncoder.encode(p.toString());
         }
 
@@ -126,11 +125,14 @@ public class RedisJson implements Json {
                                 .sendCommand(Command.SET, args.toArray(new byte[args.size()][]));
                         status = conn.getClient().getStatusCodeReply();
                     } catch (JedisDataException e1) {
-                        if (e1.getMessage().startsWith("ERR missing")) {
-                            throw new KeyNotFoundException(e.getMessage());
+                        if (e1.getMessage().startsWith("ERR missing")
+                                || e1.getMessage().startsWith("ERR new")) {
+                            throw new KeyNotFoundException(e1.getMessage());
                         }
-                        throw new JedisDataException(e.getMessage());
+                        throw new JedisDataException(e1.getMessage());
                     }
+                } else if (e.getMessage().startsWith("WRONGTYPE Operation")) {
+                    throw new KeyNotFoundException(e.getMessage());
                 } else {
                     throw new JedisDataException(e.getMessage());
                 }
@@ -148,7 +150,7 @@ public class RedisJson implements Json {
         args.add(SafeEncoder.encode(path.toString()));
         if (object instanceof List) {
             ((List<?>) object).forEach(obj ->
-                args.add(SafeEncoder.encode(gson.toJson(obj)))
+                    args.add(SafeEncoder.encode(gson.toJson(obj)))
             );
         } else {
             args.add(SafeEncoder.encode(gson.toJson(object)));
@@ -172,11 +174,14 @@ public class RedisJson implements Json {
                                 .sendCommand(Command.SET, args.toArray(new byte[args.size()][]));
                         status = conn.getClient().getStatusCodeReply();
                     } catch (JedisDataException e1) {
-                        if (e1.getMessage().startsWith("ERR missing")) {
-                            throw new KeyNotFoundException(e.getMessage());
+                        if (e1.getMessage().startsWith("ERR missing")
+                                || e1.getMessage().startsWith("ERR new")) {
+                            throw new KeyNotFoundException(e1.getMessage());
                         }
-                        throw new JedisDataException(e.getMessage());
+                        throw new JedisDataException(e1.getMessage());
                     }
+                } else if (e.getMessage().startsWith("WRONGTYPE Operation")) {
+                    throw new KeyNotFoundException(e.getMessage());
                 } else {
                     throw new JedisDataException(e.getMessage());
                 }
@@ -205,18 +210,6 @@ public class RedisJson implements Json {
         return status == null ? -1 : status;
     }
 
-
-
-    /**
-     * Creates a client to the specific host/post
-     *
-     * @param host Redis host
-     * @param port Redis port
-     */
-    public RedisJson(String host, int port) {
-        this(new JedisPool(host, port));
-    }
-
     /**
      * Creates a client using provided Jedis pool
      *
@@ -228,6 +221,7 @@ public class RedisJson implements Json {
 
     /**
      * Helper to handle single optional path argument situations
+     *
      * @param path a single optional path
      * @return the provided path or root if not
      */
@@ -245,19 +239,9 @@ public class RedisJson implements Json {
     }
 
     /**
-     * Deletes the root path
-     * @param key the key name
-     * @return the number of paths deleted (0 or 1)
-     */
-    @Override
-    public Long del(String key) {
-        return del(key, Path.ROOT_PATH);
-    }
-
-
-    /**
      * Deletes a path
-     * @param key the key name
+     *
+     * @param key  the key name
      * @param path optional single path in the object, defaults to root
      * @return path deleted
      */
@@ -281,7 +265,8 @@ public class RedisJson implements Json {
 
     /**
      * Gets an object
-     * @param key the key name
+     *
+     * @param key   the key name
      * @param paths optional one ore more paths in the object
      * @return the requested object
      * @deprecated use {@link #get(String, Class, Path...)} instead
@@ -289,12 +274,13 @@ public class RedisJson implements Json {
     @Override
     @Deprecated
     public <T> T get(String key, Path... paths) {
-        return (T)this.get(key, Object.class, paths);
+        return (T) this.get(key, Object.class, paths);
     }
 
     /**
      * Gets an object
-     * @param key the key name
+     *
+     * @param key   the key name
      * @param clazz
      * @param paths optional one ore more paths in the object
      * @return the requested object
@@ -302,9 +288,9 @@ public class RedisJson implements Json {
     @Override
     public <T> T get(String key, Class<T> clazz, Path... paths) {
         byte[][] args = new byte[1 + paths.length][];
-        int i=0;
+        int i = 0;
         args[i] = SafeEncoder.encode(key);
-        for (Path p :paths) {
+        for (Path p : paths) {
             args[++i] = SafeEncoder.encode(p.toString());
         }
 
@@ -319,9 +305,10 @@ public class RedisJson implements Json {
 
     /**
      * Sets an object at the root path
-     * @param key the key name
+     *
+     * @param key    the key name
      * @param object the Java object to store
-     * @param flag an existential modifier
+     * @param flag   an existential modifier
      */
     @Override
     public void set(String key, Object object, ExistenceModifier flag) {
@@ -330,7 +317,8 @@ public class RedisJson implements Json {
 
     /**
      * Sets an object in the root path
-     * @param key the key name
+     *
+     * @param key    the key name
      * @param object the Java object to store
      */
     @Override
@@ -340,9 +328,10 @@ public class RedisJson implements Json {
 
     /**
      * Sets an object without caring about target path existing
-     * @param key the key name
+     *
+     * @param key    the key name
      * @param object the Java object to store
-     * @param path in the object
+     * @param path   in the object
      */
     @Override
     public void set(String key, Object object, Path path) {
@@ -351,10 +340,11 @@ public class RedisJson implements Json {
 
     /**
      * Sets an object
-     * @param key the key name
+     *
+     * @param key    the key name
      * @param object the Java object to store
-     * @param flag an existential modifier
-     * @param path in the object
+     * @param flag   an existential modifier
+     * @param path   in the object
      * @return
      */
     @Override
@@ -380,7 +370,8 @@ public class RedisJson implements Json {
 
     /**
      * Gets the class of an object
-     * @param key the key name
+     *
+     * @param key  the key name
      * @param path a path in the object
      * @return the Java class of the requested object
      */
@@ -423,8 +414,9 @@ public class RedisJson implements Json {
 
     /**
      * Deletes a path
+     *
      * @param conn the Jedis connection
-     * @param key the key name
+     * @param key  the key name
      * @param path optional single path in the object, defaults to root
      * @return the number of paths deleted (0 or 1)
      * @deprecated use {@link #del(String, Path)} instead
@@ -445,8 +437,9 @@ public class RedisJson implements Json {
 
     /**
      * Gets an object
-     * @param conn the Jedis connection
-     * @param key the key name
+     *
+     * @param conn  the Jedis connection
+     * @param key   the key name
      * @param paths optional one ore more paths in the object, defaults to root
      * @return the requested object
      * @deprecated use {@link #get(String, Path...)} instead
@@ -456,7 +449,7 @@ public class RedisJson implements Json {
         List<byte[]> args = new ArrayList<>(2);
 
         args.add(SafeEncoder.encode(key));
-        for (Path p :paths) {
+        for (Path p : paths) {
             args.add(SafeEncoder.encode(p.toString()));
         }
 
@@ -470,11 +463,12 @@ public class RedisJson implements Json {
 
     /**
      * Sets an object
-     * @param conn the Jedis connection
-     * @param key the key name
+     *
+     * @param conn   the Jedis connection
+     * @param key    the key name
      * @param object the Java object to store
-     * @param flag an existential modifier
-     * @param path optional single path in the object, defaults to root
+     * @param flag   an existential modifier
+     * @param path   optional single path in the object, defaults to root
      * @deprecated use {@link #set(String, Object, ExistenceModifier, Path)} instead
      */
     protected static void set(Jedis conn, String key, Object object, ExistenceModifier flag, Path... path) {
@@ -497,20 +491,22 @@ public class RedisJson implements Json {
 
     /**
      * Sets an object without caring about target path existing
-     * @param conn the Jedis connection
-     * @param key the key name
+     *
+     * @param conn   the Jedis connection
+     * @param key    the key name
      * @param object the Java object to store
-     * @param path optional single path in the object, defaults to root
+     * @param path   optional single path in the object, defaults to root
      * @deprecated use {@link #set(String, Object, ExistenceModifier, Path)} instead
      */
     protected static void set(Jedis conn, String key, Object object, Path... path) {
-        set(conn,key, object, ExistenceModifier.DEFAULT, path);
+        set(conn, key, object, ExistenceModifier.DEFAULT, path);
     }
 
     /**
      * Gets the class of an object
+     *
      * @param conn the Jedis connection
-     * @param key the key name
+     * @param key  the key name
      * @param path optional single path in the object, defaults to root
      * @return the Java class of the requested object
      * @deprecated use {@link #type(String, Path)} instead
@@ -550,16 +546,17 @@ public class RedisJson implements Json {
 
     /**
      * Gets an object
-     * @param key the key name
+     *
+     * @param key   the key name
      * @param type
      * @param paths optional one ore more paths in the object
      * @return the requested object
      */
     protected static <T> T get(Jedis conn, String key, Type type, Path... paths) {
         byte[][] args = new byte[1 + paths.length][];
-        int i=0;
+        int i = 0;
         args[i] = SafeEncoder.encode(key);
-        for (Path p :paths) {
+        for (Path p : paths) {
             args[++i] = SafeEncoder.encode(p.toString());
         }
 
@@ -626,11 +623,14 @@ public class RedisJson implements Json {
                             .sendCommand(Command.SET, args.toArray(new byte[args.size()][]));
                     status = conn.getClient().getStatusCodeReply();
                 } catch (JedisDataException e1) {
-                    if (e1.getMessage().startsWith("ERR missing")) {
-                        throw new KeyNotFoundException(e.getMessage());
+                    if (e1.getMessage().startsWith("ERR missing")
+                            || e1.getMessage().startsWith("ERR new")) {
+                        throw new KeyNotFoundException(e1.getMessage());
                     }
-                    throw new JedisDataException(e.getMessage());
+                    throw new JedisDataException(e1.getMessage());
                 }
+            } else if (e.getMessage().startsWith("WRONGTYPE Operation")) {
+                throw new KeyNotFoundException(e.getMessage());
             } else {
                 throw new JedisDataException(e.getMessage());
             }
@@ -669,11 +669,14 @@ public class RedisJson implements Json {
                             .sendCommand(Command.SET, args.toArray(new byte[args.size()][]));
                     status = conn.getClient().getStatusCodeReply();
                 } catch (JedisDataException e1) {
-                    if (e1.getMessage().startsWith("ERR missing")) {
-                        throw new KeyNotFoundException(e.getMessage());
+                    if (e1.getMessage().startsWith("ERR missing")
+                            || e1.getMessage().startsWith("ERR new")) {
+                        throw new KeyNotFoundException(e1.getMessage());
                     }
-                    throw new JedisDataException(e.getMessage());
+                    throw new JedisDataException(e1.getMessage());
                 }
+            } else if (e.getMessage().startsWith("WRONGTYPE Operation")) {
+                throw new KeyNotFoundException(e.getMessage());
             } else {
                 throw new JedisDataException(e.getMessage());
             }
@@ -687,14 +690,17 @@ public class RedisJson implements Json {
 
     /**
      * Helper to check for an OK reply
+     *
      * @param str the reply string to "scrutinize"
      */
     private static void assertReplyOK(final Object str) {
         if (str instanceof String && !str.toString().equals("OK"))
             throw new RuntimeException((String) str);
     }
+
     /**
-     *  Helper to check for errors and throw them as an exception
+     * Helper to check for errors and throw them as an exception
+     *
      * @param str the reply string to "analyze"
      */
     private static void assertReplyNotError(final Object str) {
@@ -703,8 +709,8 @@ public class RedisJson implements Json {
     }
 
 
-    public ModulePipeline pipelined() {
-        ModulePipeline pipeline = new ModulePipeline();
+    public RedisJsonPipeline pipelined() {
+        RedisJsonPipeline pipeline = new RedisJsonPipeline();
         pipeline.setClient(getConnection().getClient());
         return pipeline;
     }

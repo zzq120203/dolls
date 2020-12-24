@@ -7,10 +7,7 @@ import java.lang.reflect.Type;
 
 public interface Json {
 
-    /**
-     * Existential modifier for the set command, by default we don't care
-     */
-    public enum ExistenceModifier implements ProtocolCommand {
+    enum ExistenceModifier implements ProtocolCommand {
         DEFAULT(""),
         NOT_EXISTS("NX"),
         MUST_EXIST("XX");
@@ -25,56 +22,29 @@ public interface Json {
         }
     }
 
-    public Long del(final String key, final Path path);
+    Long del(final String key, final Path path);
 
-    public <T> T get(String key, Type type, Path... paths);
+    <T> T get(String key, Type type, Path... paths);
 
-    public Long del(String key);
+    <T> T get(String key, Path... paths);
 
-    public <T> T get(String key, Path... paths);
+    <T> T get(String key, Class<T> clazz, Path... paths);
 
-    /**
-     * Gets an object
-     * @param key the key name
-     * @param clazz
-     * @param paths optional one ore more paths in the object
-     * @return the requested object
-     */
-    public <T> T get(String key, Class<T> clazz, Path... paths);
+    void set(String key, Object object, ExistenceModifier flag);
 
-    /**
-     * Sets an object at the root path
-     * @param key the key name
-     * @param object the Java object to store
-     * @param flag an existential modifier
-     */
-    public void set(String key, Object object, ExistenceModifier flag);
+    void set(String key, Object object);
 
-    /**
-     * Sets an object in the root path
-     * @param key the key name
-     * @param object the Java object to store
-     */
-    public void set(String key, Object object);
+    void set(String key, Object object, Path path);
 
-    /**
-     * Sets an object without caring about target path existing
-     * @param key the key name
-     * @param object the Java object to store
-     * @param path in the object
-     */
-    public void set(String key, Object object, Path path);
+    void set(String key, Object object, ExistenceModifier flag, Path path);
 
-    public void set(String key, Object object, ExistenceModifier flag, Path path);
+    Boolean setnx(String key, Object object, Path path);
 
-    public Boolean setnx(String key, Object object, Path path);
+    void arrAppend(String key, Object object, Path path);
 
-    public void arrAppend(String key, Object object, Path path);
+    void strAppend(String key, Object object, Path path);
 
-
-    public void strAppend(String key, Object object, Path path);
-
-    public Class<?> type(String key, Path path);
+    Class<?> type(String key, Path path);
 
 
 }

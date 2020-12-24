@@ -2,6 +2,7 @@ package com.zzq.dolls.redis.module;
 
 import com.zzq.dolls.redis.RedisMode;
 import com.zzq.dolls.redis.module.graph.RedisGraphs;
+import com.zzq.dolls.redis.module.json.Json;
 import com.zzq.dolls.redis.module.json.RedisJson;
 import com.zzq.dolls.redis.module.json.RedisJsonCluster;
 import com.zzq.dolls.redis.module.search.RedisSearch;
@@ -22,7 +23,7 @@ public class ModulePool {
 
     private RedisSearch search;
 
-    private RedisJsonCluster cluster;
+    private RedisJsonCluster jsonCluster;
 
     private Set<RedisModule> redisModule;
 
@@ -57,7 +58,7 @@ public class ModulePool {
             JedisPoolConfig config = new JedisPoolConfig();
             config.setMaxTotal(maxTotal);
             config.setMaxIdle(maxIdle);
-            cluster = new RedisJsonCluster(set, timeout, timeout, 10, password, config);
+            jsonCluster = new RedisJsonCluster(set, timeout, timeout, 10, password, config);
         }
     }
 
@@ -67,8 +68,14 @@ public class ModulePool {
      * @param <T> 返回值类型
      * @return T
      */
-    public <T> T json(Function<RedisJson, T> r) {
-        return r.apply(json);
+    public <T> T json(Function<Json, T> r) {
+        if (redisMode == RedisMode.STANDALONE || redisMode == RedisMode.SENTINEL) {
+            return r.apply(json);
+        } else if (redisMode == RedisMode.CLUSTER) {
+            return r.apply(jsonCluster);
+        } else {
+            throw new RuntimeException("redis mode is error!");
+        }
     }
 
     public <T> T graph(Function<RedisGraphs, T> r) {
@@ -82,6 +89,6 @@ public class ModulePool {
     public <T> T cluster(Function<ModuleCluster, T> r) {
         if (redisMode != RedisMode.CLUSTER)
             throw new IllegalThreadStateException("redis mode is not cluster");
-        return r.apply(cluster);
+        return r.apply(jsonCluster);
     }
 }

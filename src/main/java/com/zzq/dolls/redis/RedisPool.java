@@ -6,6 +6,7 @@ import redis.clients.jedis.*;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -13,6 +14,9 @@ import java.util.stream.Collectors;
 import redis.clients.jedis.util.Pool;
 
 public class RedisPool {
+
+    private static ExecutorService executorService = Executors.newSingleThreadExecutor();
+
     private Set<String> urls;
 
     private String password;
@@ -122,6 +126,18 @@ public class RedisPool {
         }
     }
 
+    private <T> T jedis(int seconds, Function<Jedis, T> r) throws TimeoutException {
+        if (redisMode != RedisMode.STANDALONE && redisMode != RedisMode.SENTINEL)
+            throw new IllegalThreadStateException("redis mode is not standalone or sentinel");
+        try (Jedis jedis = getResource(seconds)) {
+            if (jedis != null) {
+                return r.apply(jedis);
+            } else {
+                return null;
+            }
+        }
+    }
+
     /**
      * set redisMode -> RedisMode.STANDALONE or RedisMode.SENTINEL
      * @param p Pipeline
@@ -159,6 +175,20 @@ public class RedisPool {
         }
     }
 
+    private Jedis getResource(int seconds) throws TimeoutException {
+        Jedis jedis;
+        FutureTask<Jedis> futureTask = new FutureTask<>(this::getResource);
+
+        executorService.execute(futureTask);
+        try {
+            jedis = futureTask.get(seconds, TimeUnit.SECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            futureTask.cancel(true);
+            throw new TimeoutException("get resource timeout("+seconds+"s)");
+        }
+        return jedis;
+    }
+
     private Jedis getResource() {
         if (redisMode == RedisMode.STANDALONE || redisMode == RedisMode.SENTINEL) {
             return pool.getResource();
@@ -173,7 +203,7 @@ public class RedisPool {
 
     public static final class Builder {
 
-        private Set<String> urls = null;
+        private Set<String> urls = new HashSet<>();
 
         private String password = null;
 
@@ -189,16 +219,13 @@ public class RedisPool {
 
         private int db = 0;
 
-        private Set<RedisModule> redisModule;
+        private Set<RedisModule> redisModule = new HashSet<>();;
 
         public RedisPool build() {
             return new RedisPool(this);
         }
 
         public Builder url(final String... url) {
-            if (this.urls == null) {
-                this.urls = new HashSet<>();
-            }
             this.urls.addAll(Arrays.asList(url));
             return this;
         }
@@ -209,9 +236,6 @@ public class RedisPool {
          * @return
          */
         public Builder urls(Collection<String> urls) {
-            if (this.urls == null) {
-                this.urls = new HashSet<>();
-            }
             this.urls.addAll(urls);
             return this;
         }
@@ -238,9 +262,6 @@ public class RedisPool {
         }
 
         public Builder redisModule(int... redisModules) {
-            if (this.redisModule == null) {
-                this.redisModule = new HashSet<>();
-            }
             for (int redisModule : redisModules) {
                 if (redisModule == -1) {
                     this.redisModule.addAll(Arrays.asList(RedisModule.values()));
@@ -252,9 +273,6 @@ public class RedisPool {
         }
 
         public Builder redisModule(RedisModule... redisModule) {
-            if (this.redisModule == null) {
-                this.redisModule = new HashSet<>();
-            }
             this.redisModule.addAll(Arrays.asList(redisModule));
             return this;
         }

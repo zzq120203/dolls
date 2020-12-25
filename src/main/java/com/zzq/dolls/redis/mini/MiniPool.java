@@ -1,7 +1,6 @@
 package com.zzq.dolls.redis.mini;
 
 import com.zzq.dolls.redis.RedisMode;
-import com.zzq.dolls.redis.module.RedisModule;
 import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.util.Pool;

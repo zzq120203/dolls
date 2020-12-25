@@ -1,8 +1,7 @@
 package com.zzq.dolls.redis.mini;
 
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
-import redis.clients.jedis.HostAndPort;
-import redis.clients.jedis.JedisCluster;
+import redis.clients.jedis.*;
 
 import java.util.Set;
 

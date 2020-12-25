@@ -33,8 +33,8 @@ public class RedisPool {
 
     private Set<RedisModule> redisModule;
 
-    protected Pool<Jedis> pool;
-    protected JedisCluster cluster;
+    private Pool<Jedis> pool;
+    private JedisCluster cluster;
 
     private ModulePool modulePool;
     private MiniPool miniPool;
@@ -154,6 +154,7 @@ public class RedisPool {
         return modulePool;
     }
 
+    @Deprecated
     public MiniPool mini() {
         if (miniPool == null) {
             miniPool = new MiniPool(this.urls, this.password, this.redisMode, this.timeout, this.maxTotal, this.maxIdle, this.masterName, this.db);

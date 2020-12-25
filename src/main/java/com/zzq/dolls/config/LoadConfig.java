@@ -121,8 +121,8 @@ public class LoadConfig {
                 } else {
                     String[] names = from.alternateNames();
                     for (String a_name: names) {
-                        if (lcMap.containsKey(a_name)) {
-                            value = lcMap.get(a_name);
+                        if (lcMap.containsKey(a_name.toLowerCase())) {
+                            value = lcMap.get(a_name.toLowerCase());
                             exist = true;
                         }
                     }

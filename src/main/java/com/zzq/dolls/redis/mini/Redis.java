@@ -1,9 +1,7 @@
 package com.zzq.dolls.redis.mini;
 
 import redis.clients.jedis.*;
-import redis.clients.jedis.commands.BinaryJedisClusterCommands;
-import redis.clients.jedis.commands.MultiKeyBinaryJedisClusterCommands;
-import redis.clients.jedis.commands.MultiKeyCommands;
+import redis.clients.jedis.commands.*;
 import redis.clients.jedis.params.GeoRadiusParam;
 import redis.clients.jedis.params.SetParams;
 import redis.clients.jedis.params.ZAddParams;
@@ -15,7 +13,7 @@ import java.util.Map;
 import java.util.Set;
 
 public interface Redis extends MultiKeyCommands, BinaryJedisClusterCommands,
-        MultiKeyBinaryJedisClusterCommands, Closeable {
+        MultiKeyBinaryJedisClusterCommands, ScriptingCommands, JedisClusterScriptingCommands, Closeable {
 
 
     /**

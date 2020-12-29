@@ -1,11 +1,13 @@
 package com.zzq.dolls.redis.module.json;
 
+import com.zzq.dolls.redis.mini.Redis;
 import redis.clients.jedis.commands.ProtocolCommand;
 import redis.clients.jedis.util.SafeEncoder;
 
 import java.lang.reflect.Type;
 
-public interface Json {
+public interface Json extends Redis {
+
 
     enum ExistenceModifier implements ProtocolCommand {
         DEFAULT(""),
@@ -45,6 +47,5 @@ public interface Json {
     void strAppend(String key, Object object, Path path);
 
     Class<?> type(String key, Path path);
-
 
 }

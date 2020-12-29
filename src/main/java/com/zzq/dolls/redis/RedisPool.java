@@ -95,16 +95,6 @@ public class RedisPool {
             cluster = new JedisCluster(set, timeout, timeout, 10, password, config);
         }
 
-        if (!redisModule.isEmpty()) {
-            if (redisMode == RedisMode.SENTINEL || redisMode == RedisMode.STANDALONE) {
-                modulePool = new ModulePool(pool, redisMode, redisModule);
-            } else if (redisMode == RedisMode.CLUSTER) {
-                modulePool = new ModulePool(urls, redisMode, redisModule, maxTotal, maxIdle, timeout, password);
-            } else {
-                throw new IllegalThreadStateException("redis mode is not cluster, standalone or sentinel");
-            }
-        }
-
     }
 
     /**
@@ -151,13 +141,16 @@ public class RedisPool {
     }
 
     public ModulePool module() {
+        if (modulePool == null) {
+            modulePool = new ModulePool(this, redisMode, redisModule);
+        }
         return modulePool;
     }
 
     @Deprecated
     public MiniPool mini() {
         if (miniPool == null) {
-            miniPool = new MiniPool(this.urls, this.password, this.redisMode, this.timeout, this.maxTotal, this.maxIdle, this.masterName, this.db);
+            miniPool = new MiniPool(this, redisMode);
         }
         return miniPool;
     }

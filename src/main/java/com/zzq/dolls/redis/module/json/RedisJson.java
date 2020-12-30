@@ -11,6 +11,7 @@ import redis.clients.jedis.util.SafeEncoder;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class RedisJson extends JedisMini implements Json {
@@ -25,7 +26,8 @@ public class RedisJson extends JedisMini implements Json {
         byte[][] args = new byte[2][];
         args[0] = SafeEncoder.encode(key);
         args[1] = SafeEncoder.encode(path.toString());
-        return (Long) sendCommand(Command.DEL, args);
+        Object o = sendCommand(Long.class, Command.DEL, args);
+        return o == null ? 0 : Long.parseLong(o.toString());
     }
 
     @Override
@@ -37,7 +39,7 @@ public class RedisJson extends JedisMini implements Json {
             args[++i] = SafeEncoder.encode(p.toString());
         }
 
-        Object rep = sendCommand(Command.GET, args);
+        Object rep = sendCommand(String.class, Command.GET, args);
         if (rep == null) {
             return null;
         }
@@ -77,7 +79,7 @@ public class RedisJson extends JedisMini implements Json {
             args.add(flag.getRaw());
         }
 
-        String status = (String) sendCommand(Command.SET, args.toArray(new byte[args.size()][]));
+        Object status = sendCommand(String.class, Command.SET, args.toArray(new byte[args.size()][]));
         assertReplyOK(status);
     }
 
@@ -88,11 +90,11 @@ public class RedisJson extends JedisMini implements Json {
         args.add(SafeEncoder.encode(key));
         args.add(SafeEncoder.encode(path.toString()));
 
-        String rep = (String) sendCommand(Command.TYPE, args.toArray(new byte[args.size()][]));
+        Object rep = sendCommand(String.class, Command.TYPE, args.toArray(new byte[args.size()][]));
 
         assertReplyNotError(rep);
 
-        switch (rep) {
+        switch (rep.toString()) {
             case "null":
                 return null;
             case "boolean":
@@ -108,7 +110,7 @@ public class RedisJson extends JedisMini implements Json {
             case "array":
                 return List.class;
             default:
-                throw new java.lang.RuntimeException(rep);
+                throw new java.lang.RuntimeException(rep.toString());
         }
     }
 
@@ -150,26 +152,34 @@ public class RedisJson extends JedisMini implements Json {
         throw new RuntimeException("Only a single optional path is allowed");
     }
 
-    private Object sendCommand(Command command, byte[]... args) {
+    private <T> Object sendCommand(Class<T> clazz, Command command, byte[]... args) {
         if (mode == RedisMode.CLUSTER) {
-            return pool.cluster(cluster -> cluster.sendCommand(args[0], command, args));
+            Object result = pool.cluster(cluster -> cluster.sendCommand(args[0], command, args));
+            if (clazz == String.class) {
+                return result == null ? null : new String((byte[]) result);
+            } else if (clazz == Integer.class || clazz == Long.class) {
+                return Long.parseLong(result.toString());
+            } else {
+                return result;
+            }
         } else {
             return pool.jedis(jedis -> {
                 jedis.getClient()
-                        .sendCommand(Command.DEL, args);
-                return jedis.getClient().getIntegerReply();
+                        .sendCommand(command, args);
+                if (clazz == String.class) {
+                    return jedis.getClient().getBulkReply();
+                } else if (clazz == Integer.class || clazz == Long.class) {
+                    return jedis.getClient().getIntegerReply();
+                } else if (clazz == List.class) {
+                    return jedis.getClient().getMultiBulkReply();
+                } else {
+                    return jedis.getClient().getBulkReply();
+                }
             });
         }
     }
 
-    public Long del(String key, Path... path) {
-        List<byte[]> args = new ArrayList<>(2);
-        args.add(SafeEncoder.encode(key));
-        args.add(SafeEncoder.encode(getSingleOptionalPath(path).toString()));
-
-        return (Long) sendCommand(Command.DEL, args.toArray(new byte[args.size()][]));
-    }
-
+    @Override
     public <T> T get(String key, Class<T> clazz, Path... paths) {
 
         List<byte[]> args = new ArrayList<>(2);
@@ -178,64 +188,12 @@ public class RedisJson extends JedisMini implements Json {
             args.add(SafeEncoder.encode(p.toString()));
         }
 
-        String rep = (String) sendCommand(Command.GET, args.toArray(new byte[args.size()][]));
+        Object rep = sendCommand(String.class, Command.GET, args.toArray(new byte[args.size()][]));
         assertReplyNotError(rep);
-        return gson.fromJson(rep, clazz);
+        return gson.fromJson(rep.toString(), clazz);
     }
 
-    public void set(String key, Object object, ExistenceModifier flag, Path... path) {
-
-        List<byte[]> args = new ArrayList<>(4);
-
-        args.add(SafeEncoder.encode(key));
-        args.add(SafeEncoder.encode(getSingleOptionalPath(path).toString()));
-        args.add(SafeEncoder.encode(gson.toJson(object)));
-        if (ExistenceModifier.DEFAULT != flag) {
-            args.add(flag.getRaw());
-        }
-
-        String rep = (String) sendCommand(Command.SET, args.toArray(new byte[args.size()][]));
-
-        assertReplyOK(rep);
-    }
-
-
-    public void set(String key, Object object, Path... path) {
-        set(key, object, ExistenceModifier.DEFAULT, path);
-    }
-
-    public Class<?> type(String key, Path... path) {
-
-        List<byte[]> args = new ArrayList<>(2);
-
-        args.add(SafeEncoder.encode(key));
-        args.add(SafeEncoder.encode(getSingleOptionalPath(path).toString()));
-
-        String rep = (String) sendCommand(Command.TYPE, args.toArray(new byte[args.size()][]));
-
-        assertReplyNotError(rep);
-
-        switch (rep) {
-            case "null":
-                return null;
-            case "boolean":
-                return boolean.class;
-            case "integer":
-                return int.class;
-            case "number":
-                return float.class;
-            case "string":
-                return String.class;
-            case "object":
-                return Object.class;
-            case "array":
-                return List.class;
-            default:
-                throw new java.lang.RuntimeException(rep);
-        }
-    }
-
-
+    @Override
     public Boolean setnx(String key, Object object, Path path) {
 
         List<byte[]> args = new ArrayList<>(4);
@@ -245,11 +203,12 @@ public class RedisJson extends JedisMini implements Json {
         args.add(SafeEncoder.encode(gson.toJson(object)));
         args.add(ExistenceModifier.NOT_EXISTS.getRaw());
 
-        String status = (String) sendCommand(Command.SET, args.toArray(new byte[args.size()][]));
+        Object status = sendCommand(String.class, Command.SET, args.toArray(new byte[args.size()][]));
         assertReplyOK(status);
         return status != null;
     }
 
+    @Override
     public void arrAppend(String key, Object object, Path path) {
         List<byte[]> args = new ArrayList<>(4);
 
@@ -265,7 +224,7 @@ public class RedisJson extends JedisMini implements Json {
 
         Object status;
         try {
-            status = sendCommand(Command.ARRAPPEND, args.toArray(new byte[args.size()][]));
+            status = sendCommand(Long.class, Command.ARRAPPEND, args.toArray(new byte[args.size()][]));
         } catch (JedisDataException e) {
             if (e.getMessage().startsWith("ERR key")) {
                 // arr is not exist , set
@@ -281,7 +240,7 @@ public class RedisJson extends JedisMini implements Json {
                     args.add(SafeEncoder.encode(gson.toJson(objects)));
                 }
                 try {
-                    status = sendCommand(Command.SET, args.toArray(new byte[args.size()][]));
+                    status = sendCommand(String.class, Command.SET, args.toArray(new byte[args.size()][]));
                 } catch (JedisDataException e1) {
                     if (e1.getMessage().startsWith("ERR missing")
                             || e1.getMessage().startsWith("ERR new")) {
@@ -298,6 +257,7 @@ public class RedisJson extends JedisMini implements Json {
         assertReplyNotError(status);
     }
 
+    @Override
     public void strAppend(String key, Object object, Path path) {
 
         List<byte[]> args = new ArrayList<>(3);
@@ -314,7 +274,7 @@ public class RedisJson extends JedisMini implements Json {
 
         Object status;
         try {
-            status = sendCommand(Command.STRAPPEND, args.toArray(new byte[args.size()][]));
+            status = sendCommand(Long.class, Command.STRAPPEND, args.toArray(new byte[args.size()][]));
         } catch (JedisDataException e) {
             if (e.getMessage().startsWith("ERR key")) {
                 // str is not exist , set
@@ -323,7 +283,7 @@ public class RedisJson extends JedisMini implements Json {
                 args.add(SafeEncoder.encode(path.toString()));
                 args.add(SafeEncoder.encode(gson.toJson(object)));
                 try {
-                    status = sendCommand(Command.SET, args.toArray(new byte[args.size()][]));
+                    status = sendCommand(String.class, Command.SET, args.toArray(new byte[args.size()][]));
                 } catch (JedisDataException e1) {
                     if (e1.getMessage().startsWith("ERR missing")
                             || e1.getMessage().startsWith("ERR new")) {
@@ -342,7 +302,7 @@ public class RedisJson extends JedisMini implements Json {
 
     private void assertReplyOK(final Object str) {
         if (str instanceof String && !str.toString().equals("OK"))
-            throw new RuntimeException((String) str);
+            throw new RuntimeException(new String((byte[]) str));
     }
 
     private void assertReplyNotError(final Object str) {

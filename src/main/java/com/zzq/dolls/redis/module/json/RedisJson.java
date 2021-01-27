@@ -1,21 +1,18 @@
 package com.zzq.dolls.redis.module.json;
 
-import com.google.gson.Gson;
 import com.zzq.dolls.redis.RedisMode;
 import com.zzq.dolls.redis.RedisPool;
 import com.zzq.dolls.redis.exception.KeyNotFoundException;
 import com.zzq.dolls.redis.mini.JedisMini;
+import com.zzq.dolls.serialization.json.DollsJson;
 import redis.clients.jedis.commands.ProtocolCommand;
 import redis.clients.jedis.exceptions.JedisDataException;
 import redis.clients.jedis.util.SafeEncoder;
 
-import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class RedisJson extends JedisMini implements Json {
-    private static final Gson gson = new Gson();
 
     public RedisJson(RedisPool pool, RedisMode mode) {
         super(pool, mode);
@@ -28,23 +25,6 @@ public class RedisJson extends JedisMini implements Json {
         args[1] = SafeEncoder.encode(path.toString());
         Object o = sendCommand(Long.class, Command.DEL, args);
         return o == null ? 0 : Long.parseLong(o.toString());
-    }
-
-    @Override
-    public <T> T get(String key, Type type, Path... paths) {
-        byte[][] args = new byte[1 + paths.length][];
-        int i = 0;
-        args[i] = SafeEncoder.encode(key);
-        for (Path p : paths) {
-            args[++i] = SafeEncoder.encode(p.toString());
-        }
-
-        Object rep = sendCommand(String.class, Command.GET, args);
-        if (rep == null) {
-            return null;
-        }
-        assertReplyNotError(rep);
-        return gson.fromJson((String) rep, type);
     }
 
     @Override
@@ -74,7 +54,7 @@ public class RedisJson extends JedisMini implements Json {
 
         args.add(SafeEncoder.encode(key));
         args.add(SafeEncoder.encode(path.toString()));
-        args.add(SafeEncoder.encode(gson.toJson(object)));
+        args.add(SafeEncoder.encode(DollsJson.toJson(object)));
         if (ExistenceModifier.DEFAULT != flag) {
             args.add(flag.getRaw());
         }
@@ -93,8 +73,8 @@ public class RedisJson extends JedisMini implements Json {
         Object rep = sendCommand(String.class, Command.TYPE, args.toArray(new byte[args.size()][]));
 
         assertReplyNotError(rep);
-
-        switch (rep.toString()) {
+        String type = rep == null ? "null" : rep.toString();
+        switch (type) {
             case "null":
                 return null;
             case "boolean":
@@ -158,7 +138,7 @@ public class RedisJson extends JedisMini implements Json {
             if (clazz == String.class) {
                 return result == null ? null : new String((byte[]) result);
             } else if (clazz == Integer.class || clazz == Long.class) {
-                return Long.parseLong(result.toString());
+                return result == null ? null : Long.parseLong(result.toString());
             } else {
                 return result;
             }
@@ -173,7 +153,7 @@ public class RedisJson extends JedisMini implements Json {
                 } else if (clazz == List.class) {
                     return jedis.getClient().getMultiBulkReply();
                 } else {
-                    return jedis.getClient().getBulkReply();
+                    return jedis.getClient().getBinaryBulkReply();
                 }
             });
         }
@@ -184,13 +164,15 @@ public class RedisJson extends JedisMini implements Json {
 
         List<byte[]> args = new ArrayList<>(2);
         args.add(SafeEncoder.encode(key));
+        // 中文解码
+        args.add(SafeEncoder.encode("NOESCAPE"));
         for (Path p : paths) {
             args.add(SafeEncoder.encode(p.toString()));
         }
 
-        Object rep = sendCommand(String.class, Command.GET, args.toArray(new byte[args.size()][]));
+        Object rep = sendCommand(byte[].class, Command.GET, args.toArray(new byte[args.size()][]));
         assertReplyNotError(rep);
-        return gson.fromJson(rep.toString(), clazz);
+        return rep == null ? null : DollsJson.fromJson(new String((byte[])rep), clazz);
     }
 
     @Override
@@ -200,7 +182,7 @@ public class RedisJson extends JedisMini implements Json {
 
         args.add(SafeEncoder.encode(key));
         args.add(SafeEncoder.encode(path.toString()));
-        args.add(SafeEncoder.encode(gson.toJson(object)));
+        args.add(SafeEncoder.encode(DollsJson.toJson(object)));
         args.add(ExistenceModifier.NOT_EXISTS.getRaw());
 
         Object status = sendCommand(String.class, Command.SET, args.toArray(new byte[args.size()][]));
@@ -216,10 +198,10 @@ public class RedisJson extends JedisMini implements Json {
         args.add(SafeEncoder.encode(path.toString()));
         if (object instanceof List) {
             ((List<?>) object).forEach(obj ->
-                    args.add(SafeEncoder.encode(gson.toJson(obj)))
+                    args.add(SafeEncoder.encode(DollsJson.toJson(obj)))
             );
         } else {
-            args.add(SafeEncoder.encode(gson.toJson(object)));
+            args.add(SafeEncoder.encode(DollsJson.toJson(object)));
         }
 
         Object status;
@@ -233,11 +215,11 @@ public class RedisJson extends JedisMini implements Json {
                 args.add(SafeEncoder.encode(key));
                 args.add(SafeEncoder.encode(path.toString()));
                 if (object instanceof List) {
-                    args.add(SafeEncoder.encode(gson.toJson(object)));
+                    args.add(SafeEncoder.encode(DollsJson.toJson(object)));
                 } else {
                     List<Object> objects = new ArrayList<>();
                     objects.add(object);
-                    args.add(SafeEncoder.encode(gson.toJson(objects)));
+                    args.add(SafeEncoder.encode(DollsJson.toJson(objects)));
                 }
                 try {
                     status = sendCommand(String.class, Command.SET, args.toArray(new byte[args.size()][]));
@@ -266,10 +248,10 @@ public class RedisJson extends JedisMini implements Json {
         args.add(SafeEncoder.encode(path.toString()));
         if (object instanceof List) {
             ((List<?>) object).forEach(obj ->
-                    args.add(SafeEncoder.encode(gson.toJson(obj)))
+                    args.add(SafeEncoder.encode(DollsJson.toJson(obj)))
             );
         } else {
-            args.add(SafeEncoder.encode(gson.toJson(object)));
+            args.add(SafeEncoder.encode(DollsJson.toJson(object)));
         }
 
         Object status;
@@ -281,7 +263,7 @@ public class RedisJson extends JedisMini implements Json {
                 args.clear();
                 args.add(SafeEncoder.encode(key));
                 args.add(SafeEncoder.encode(path.toString()));
-                args.add(SafeEncoder.encode(gson.toJson(object)));
+                args.add(SafeEncoder.encode(DollsJson.toJson(object)));
                 try {
                     status = sendCommand(String.class, Command.SET, args.toArray(new byte[args.size()][]));
                 } catch (JedisDataException e1) {

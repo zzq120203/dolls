@@ -26,8 +26,6 @@ public interface Json extends Redis {
 
     Long del(final String key, final Path path);
 
-    <T> T get(String key, Type type, Path... paths);
-
     <T> T get(String key, Path... paths);
 
     <T> T get(String key, Class<T> clazz, Path... paths);

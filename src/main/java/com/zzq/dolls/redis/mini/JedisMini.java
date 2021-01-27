@@ -40,9 +40,9 @@ public class JedisMini implements Redis {
     @Override
     public Object evalsha(String sha1, String sampleKey) {
         if (mode == RedisMode.CLUSTER) {
-            return pool.cluster(cluster -> cluster.eval(sha1, sampleKey));
+            return pool.cluster(cluster -> cluster.evalsha(sha1, sampleKey));
         } else {
-            return pool.jedis(jedis -> jedis.eval(sha1));
+            return pool.jedis(jedis -> jedis.evalsha(sha1));
         }
     }
 

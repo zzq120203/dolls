@@ -22,7 +22,7 @@ public class JedisClusterMini extends JedisCluster implements Redis {
     @Deprecated
     @Override
     public Object evalsha(String sha1) {
-        return super.eval(sha1, sampleKey);
+        return super.evalsha(sha1, sampleKey);
     }
 
     @Deprecated
